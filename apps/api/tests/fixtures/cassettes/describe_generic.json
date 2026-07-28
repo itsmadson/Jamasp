@@ -1,0 +1,8 @@
+{
+  "summary": {"fa": "توضیح نمونه برای تست", "en": "Generic description used in tests"},
+  "grain": "one row per record",
+  "business_domain": "test",
+  "common_questions": ["نمونه سوال"],
+  "confidence": 0.9,
+  "fields": []
+}

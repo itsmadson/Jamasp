@@ -96,7 +96,11 @@ async def session(metadata_dsn: str) -> AsyncIterator[AsyncSession]:
     engine = create_async_engine(metadata_dsn)
     connection = await engine.connect()
     transaction = await connection.begin()
-    maker = async_sessionmaker(bind=connection, expire_on_commit=False)
+    # create_savepoint lets code under test call commit() without escaping the
+    # outer transaction this fixture rolls back.
+    maker = async_sessionmaker(
+        bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint"
+    )
 
     async with maker() as active_session:
         yield active_session
