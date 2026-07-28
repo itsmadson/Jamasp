@@ -108,3 +108,62 @@ async def session(metadata_dsn: str) -> AsyncIterator[AsyncSession]:
     await transaction.rollback()
     await connection.close()
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def client(session, monkeypatch):
+    """App wired to the rolled-back test session, so HTTP tests stay isolated."""
+    from httpx import ASGITransport, AsyncClient
+
+    from agah.db import get_session
+    from agah.main import create_app
+
+    monkeypatch.setenv("AGAH_JWT_SECRET", "test-jwt-secret")
+    app = create_app()
+    app.dependency_overrides[get_session] = lambda: session
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
+        yield async_client
+
+
+async def _make_user(session, email: str, role) -> object:
+    from agah.models.user import User
+    from agah.security.password import hash_password
+
+    user = User(email=email, password_hash=hash_password("correct-horse"), role=role)
+    session.add(user)
+    await session.flush()
+    return user
+
+
+@pytest_asyncio.fixture
+async def admin_user(session):
+    from agah.models.user import UserRole
+
+    return await _make_user(session, "admin@agah.local", UserRole.ADMIN)
+
+
+@pytest_asyncio.fixture
+async def analyst_user(session):
+    from agah.models.user import UserRole
+
+    return await _make_user(session, "analyst@agah.local", UserRole.ANALYST)
+
+
+async def _cookie_for(client, user) -> dict[str, str]:
+    response = await client.post(
+        "/api/auth/login", json={"email": user.email, "password": "correct-horse"}
+    )
+    response.raise_for_status()
+    return {"agah_session": response.cookies["agah_session"]}
+
+
+@pytest_asyncio.fixture
+async def admin_cookie(client, admin_user):
+    return await _cookie_for(client, admin_user)
+
+
+@pytest_asyncio.fixture
+async def analyst_cookie(client, analyst_user):
+    return await _cookie_for(client, analyst_user)

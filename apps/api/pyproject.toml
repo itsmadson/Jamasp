@@ -5,7 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
-    "pydantic>=2.9",
+    "pydantic[email]>=2.9",
     "pydantic-settings>=2.6",
     "sqlalchemy[asyncio]>=2.0.36",
     "asyncpg>=0.30",
@@ -34,6 +34,10 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint.flake8-bugbear]
+# Depends()/Security() in argument defaults is the FastAPI dependency-injection idiom.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Security"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["agah"]
