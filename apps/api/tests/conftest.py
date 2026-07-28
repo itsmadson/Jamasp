@@ -220,5 +220,63 @@ async def admin_cookie(client, admin_user):
 
 
 @pytest_asyncio.fixture
+async def scanned_source(session, hr_dsn, monkeypatch):
+    """A source that has completed one scan, with every entity described and pending."""
+    from agah.llm.base import Completion
+    from agah.models.scan import Scan
+    from agah.models.source import DataSource, SamplingPolicy, SourceKind
+    from agah.pipeline.orchestrator import run_scan
+    from agah.security.crypto import encrypt
+
+    key = b"0" * 32
+    monkeypatch.setattr("agah.pipeline.orchestrator.key_from_settings", lambda: key)
+
+    cassette = json.loads(
+        (Path(__file__).parent / "fixtures/cassettes/describe_leave_requests.json").read_text()
+    )
+
+    async def fake_call(session_, task, messages, **kwargs):
+        return Completion(
+            text=json.dumps(cassette), tokens_in=10, tokens_out=20,
+            model="stub", provider="stub", latency_ms=1,
+        )
+
+    async def fake_embed(session_, texts, scan_id=None):
+        return [[0.0] * 1024 for _ in texts]
+
+    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("agah.pipeline.embed.embed_texts", fake_embed)
+
+    source = DataSource(
+        name="HR",
+        kind=SourceKind.POSTGRES,
+        config_encrypted=encrypt(json.dumps({"dsn": hr_dsn}), key),
+        sampling_policy=SamplingPolicy.MASKED,
+    )
+    session.add(source)
+    await session.flush()
+    scan = Scan(data_source_id=source.id)
+    session.add(scan)
+    await session.flush()
+    await run_scan(session, scan.id)
+    return source
+
+
+@pytest_asyncio.fixture
+async def entity(session, scanned_source):
+    from sqlalchemy import select
+
+    from agah.models.entity import Entity
+
+    return (
+        await session.scalars(
+            select(Entity).where(
+                Entity.data_source_id == scanned_source.id, Entity.name == "leave_requests"
+            )
+        )
+    ).one()
+
+
+@pytest_asyncio.fixture
 async def analyst_cookie(client, analyst_user):
     return await _cookie_for(client, analyst_user)
