@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "fa": "درخواست‌های مرخصی کارکنان به همراه بازه زمانی و وضعیت تایید",
+    "en": "Employee leave requests with their date range and approval status"
+  },
+  "grain": "one row per leave request",
+  "business_domain": "human resources",
+  "common_questions": [
+    "افرادی که این ماه مرخصی گرفتند",
+    "تعداد مرخصی‌های رد شده به تفکیک ماه"
+  ],
+  "confidence": 0.86,
+  "fields": [
+    {
+      "name": "id",
+      "meaning": {"fa": "شناسه یکتای درخواست", "en": "Unique request identifier"},
+      "unit": null,
+      "enum_map": null,
+      "confidence": 0.99
+    },
+    {
+      "name": "emp_id",
+      "meaning": {"fa": "شناسه کارمند درخواست‌دهنده", "en": "Requesting employee identifier"},
+      "unit": null,
+      "enum_map": null,
+      "confidence": 0.82
+    },
+    {
+      "name": "status",
+      "meaning": {"fa": "وضعیت بررسی درخواست", "en": "Review status of the request"},
+      "unit": null,
+      "enum_map": {
+        "1": {"fa": "در انتظار", "en": "pending"},
+        "2": {"fa": "تایید شده", "en": "approved"},
+        "3": {"fa": "رد شده", "en": "rejected"}
+      },
+      "confidence": 0.95
+    },
+    {
+      "name": "start_date",
+      "meaning": {"fa": "تاریخ شروع مرخصی", "en": "Leave start date"},
+      "unit": null,
+      "enum_map": null,
+      "confidence": 0.97
+    },
+    {
+      "name": "end_date",
+      "meaning": {"fa": "تاریخ پایان مرخصی", "en": "Leave end date"},
+      "unit": null,
+      "enum_map": null,
+      "confidence": 0.97
+    }
+  ]
+}

@@ -51,6 +51,45 @@ def hr_dsn() -> Iterator[str]:
         )
 
 
+@pytest_asyncio.fixture(scope="session")
+async def hr_snapshot(hr_dsn: str):
+    from agah.adapters.postgres import PostgresAdapter
+
+    return await PostgresAdapter(hr_dsn).introspect()
+
+
+def _entity(snapshot, name: str):
+    return next(entity for entity in snapshot.entities if entity.name == name)
+
+
+@pytest_asyncio.fixture
+async def leave_entity(hr_snapshot):
+    return _entity(hr_snapshot, "leave_requests")
+
+
+@pytest_asyncio.fixture
+async def employees_entity(hr_snapshot):
+    return _entity(hr_snapshot, "employees")
+
+
+@pytest_asyncio.fixture
+async def leave_profile(hr_dsn, leave_entity):
+    from agah.adapters.postgres import PostgresAdapter
+    from agah.models.source import SamplingPolicy
+    from agah.pipeline.profile import profile_entity
+
+    return await profile_entity(PostgresAdapter(hr_dsn), leave_entity, SamplingPolicy.MASKED)
+
+
+@pytest_asyncio.fixture
+async def employees_profile(hr_dsn, employees_entity):
+    from agah.adapters.postgres import PostgresAdapter
+    from agah.models.source import SamplingPolicy
+    from agah.pipeline.profile import profile_entity
+
+    return await profile_entity(PostgresAdapter(hr_dsn), employees_entity, SamplingPolicy.MASKED)
+
+
 @pytest_asyncio.fixture
 async def session(metadata_dsn: str) -> AsyncIterator[AsyncSession]:
     """Per-test session on a transaction that is always rolled back."""
