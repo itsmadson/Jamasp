@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from testcontainers.postgres import PostgresContainer
 
@@ -32,6 +33,22 @@ def metadata_dsn() -> Iterator[str]:
         if result.returncode != 0:
             raise RuntimeError(f"alembic upgrade failed:\n{result.stdout}\n{result.stderr}")
         yield sync_dsn.replace("postgresql://", "postgresql+asyncpg://")
+
+
+@pytest.fixture(scope="session")
+def hr_dsn() -> Iterator[str]:
+    """A Postgres seeded with the HR fixture schema, standing in for a customer database."""
+    schema = (Path(__file__).parent / "fixtures" / "hr_schema.sql").read_text()
+    with PostgresContainer("postgres:16", driver=None) as container:
+        engine = create_engine(container.get_connection_url().replace(
+            "postgresql://", "postgresql+psycopg://", 1
+        ))
+        with engine.begin() as connection:
+            connection.execute(text(schema))
+        engine.dispose()
+        yield container.get_connection_url().replace(
+            "postgresql://", "postgresql+asyncpg://", 1
+        )
 
 
 @pytest_asyncio.fixture
