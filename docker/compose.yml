@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: agah
+      POSTGRES_PASSWORD: agah
+      POSTGRES_DB: agah
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agah"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  fixture-postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: fixture
+      POSTGRES_PASSWORD: fixture
+      POSTGRES_DB: hr
+    ports: ["5433:5432"]
+    volumes:
+      - ../apps/api/tests/fixtures/hr_schema.sql:/docker-entrypoint-initdb.d/01.sql:ro
