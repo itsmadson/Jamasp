@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from agah.routers import auth
+from agah.routers import auth, scans, sources
 
 
 def create_app() -> FastAPI:
@@ -11,6 +11,8 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(auth.router)
+    app.include_router(sources.router)
+    app.include_router(scans.router)
     return app
 
 

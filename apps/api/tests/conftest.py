@@ -1,3 +1,5 @@
+import base64
+import json
 import os
 import subprocess
 from collections.abc import AsyncIterator, Iterator
@@ -110,17 +112,70 @@ async def session(metadata_dsn: str) -> AsyncIterator[AsyncSession]:
     await engine.dispose()
 
 
+class _RecordingQueue:
+    """Substitute for arq: records enqueues instead of needing a live Redis."""
+
+    current: "_RecordingQueue"
+
+    def __init__(self) -> None:
+        self.enqueued: list[tuple[str, str]] = []
+
+    async def enqueue_job(self, function: str, *args, **kwargs):
+        self.enqueued.append((function, *args))
+
+
+class _FinitePubSub:
+    def __init__(self, messages):
+        self._messages = messages
+
+    async def subscribe(self, *channels):
+        return None
+
+    async def unsubscribe(self, *channels):
+        return None
+
+    async def listen(self):
+        for message in self._messages:
+            yield message
+
+
+class _FiniteProgressSource:
+    """Emits one progress event then a terminal one, so SSE tests terminate."""
+
+    def pubsub(self):
+        return _FinitePubSub([
+            {"type": "message", "data": json.dumps(
+                {"stage": "introspect", "current": 0, "total": 1, "message": "reading schema"}
+            )},
+            {"type": "message", "data": json.dumps({"stage": "done", "status": "succeeded"})},
+        ])
+
+
+@pytest.fixture
+def fake_queue():
+    _RecordingQueue.current = _RecordingQueue()
+    return _RecordingQueue.current
+
+
 @pytest_asyncio.fixture
-async def client(session, monkeypatch):
+async def client(session, monkeypatch, fake_queue):
     """App wired to the rolled-back test session, so HTTP tests stay isolated."""
     from httpx import ASGITransport, AsyncClient
 
+    from agah.config import get_settings
     from agah.db import get_session
     from agah.main import create_app
+    from agah.queue import get_queue
+    from agah.routers.scans import get_progress_source
 
     monkeypatch.setenv("AGAH_JWT_SECRET", "test-jwt-secret")
+    monkeypatch.setenv("AGAH_SECRET_KEY", base64.urlsafe_b64encode(b"0" * 32).decode())
+    get_settings.cache_clear()
+
     app = create_app()
     app.dependency_overrides[get_session] = lambda: session
+    app.dependency_overrides[get_queue] = lambda: _RecordingQueue.current
+    app.dependency_overrides[get_progress_source] = lambda: _FiniteProgressSource()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as async_client:
