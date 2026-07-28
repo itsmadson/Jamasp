@@ -6,6 +6,7 @@ local Ollama model is a settings change, not a code change.
 """
 
 import asyncio
+import base64
 import os
 from dataclasses import dataclass, field
 from typing import Any
@@ -17,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from agah.llm.base import Completion
 from agah.llm.openai_compat import OpenAICompatProvider
 from agah.models.observability import LLMCall, Setting
+from agah.security.crypto import decrypt, key_from_settings
 
 PROVIDERS_KEY = "llm_providers"
 ROUTES_KEY = "llm_routes"
@@ -85,7 +87,13 @@ async def load_provider_config(session: AsyncSession) -> dict[str, dict[str, Any
             "api_key": os.environ.get(api_key_env, ""),
         }
     for name, config in stored.items():
-        resolved.setdefault(name, {}).update(config)
+        merged = {**config}
+        stored_key = merged.get("api_key")
+        if stored_key:
+            merged["api_key"] = decrypt(base64.b64decode(stored_key), key_from_settings())
+        resolved.setdefault(name, {}).update(
+            {key: value for key, value in merged.items() if value}
+        )
     return resolved
 
 

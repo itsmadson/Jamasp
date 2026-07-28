@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from agah.routers import auth, entities, scans, sources
+from agah.routers import auth, entities, scans, settings, sources
 
 
 def create_app() -> FastAPI:
@@ -14,6 +14,7 @@ def create_app() -> FastAPI:
     app.include_router(sources.router)
     app.include_router(scans.router)
     app.include_router(entities.router)
+    app.include_router(settings.router)
     return app
 
 
