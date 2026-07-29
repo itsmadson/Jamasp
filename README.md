@@ -3,18 +3,22 @@
 An AI report builder. Connect a database, verify what the AI understood about it,
 then ask for reports in Persian or English.
 
-The platform is built in five subsystems. **S1 — the connector and semantic layer —
-is implemented.** It registers a data source, introspects its schema, has an LLM
-describe every table in Persian and English, lets a human verify and correct those
-descriptions, and exports the approved result as a stable JSON contract.
+The platform is built in five subsystems. **the whole loop works for PostgreSQL
+sources.** Connect a database, verify what the AI understood about it, ask a question
+in Persian or English, and get a report page with charts you can then change by
+describing the change.
 
 | # | Subsystem | Status |
 |---|-----------|--------|
-| S1 | Connector & semantic layer | Built (PostgreSQL adapter) |
-| S2 | NL → query engine | Not started — consumes S1's export |
-| S3 | Report renderer | Not started |
-| S4 | Interactive chat editing | Not started |
-| S5 | Platform shell | Built alongside S1 |
+| S1 | Connector & semantic layer | Built — PostgreSQL adapter only |
+| S2 | NL → query engine | Built |
+| S3 | Report renderer | Built — spec-driven; no standalone export |
+| S4 | Interactive chat editing | Built |
+| S5 | Platform shell | Built |
+
+**Not built:** adapters for MySQL, SQL Server, Oracle, REST and MCP. The
+`SourceAdapter` protocol in `apps/api/agah/adapters/base.py` defines the contract
+each needs; only `postgres.py` implements it.
 
 Design and plans live in `docs/superpowers/`.
 
@@ -76,8 +80,8 @@ to try the full flow.
 ## Tests
 
 ```bash
-cd apps/api && uv run pytest     # 116 tests, uses throwaway Postgres containers
-cd apps/web && npm test          # 54 tests
+cd apps/api && uv run pytest     # 170 tests, uses throwaway Postgres containers
+cd apps/web && npm test          # 82 tests
 ```
 
 Neither suite makes a live LLM call: describer tests replay recorded responses.
@@ -100,3 +104,22 @@ Two properties are load-bearing and covered by tests:
   are masked. `test_no_raw_pii_anywhere_in_profile` asserts this against the prompt.
 - **Only approved descriptions are exported.** The knowledge endpoint excludes
   anything a human has not verified, which is what makes the review gate real.
+
+## How a question becomes a report
+
+```
+question ─▶ retrieve tables ─▶ generate SQL ─▶ validate ─▶ execute ─▶ design layout ─▶ render
+             no AI              LLM             no AI       no AI      LLM             no AI
+```
+
+Three properties hold by construction:
+
+- **Only approved knowledge is used.** The query engine reads the knowledge export,
+  which contains only descriptions a human verified. That is what makes the review
+  gate real rather than decorative.
+- **Generated SQL is validated before it runs.** A single SELECT, parsed as an AST,
+  every table checked against the approved set. A hallucinated table never reaches
+  the database.
+- **Nothing the model writes is executed.** It authors a declarative report layout,
+  not component source. A block naming a column that no longer exists is dropped;
+  the rest of the report still renders.
