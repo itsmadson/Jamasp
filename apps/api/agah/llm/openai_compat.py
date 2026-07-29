@@ -10,6 +10,7 @@ from typing import Any
 import httpx
 
 from agah.llm.base import Completion
+from agah.llm.schema import strict
 
 TIMEOUT_SECONDS = 120.0
 
@@ -102,7 +103,11 @@ class OpenAICompatProvider:
         if schema is not None:
             payload["response_format"] = {
                 "type": "json_schema",
-                "json_schema": {"name": "response", "strict": True, "schema": schema},
+                "json_schema": {
+                    "name": "response",
+                    "strict": True,
+                    "schema": strict(schema),
+                },
             }
 
         started = time.perf_counter()
