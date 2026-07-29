@@ -42,6 +42,27 @@
     "lastScan": "Last scan",
     "never": "Never",
     "loading": "Loading…",
-    "loadFailed": "Could not load data sources."
+    "loadFailed": "Could not load data sources.",
+    "review": "Review"
+  },
+  "scan": {
+    "starting": "Starting scan…",
+    "connectionLost": "Lost the progress connection. The scan may still be running — reload to check.",
+    "finishedSucceeded": "Scan finished.",
+    "finishedPartial": "Scan finished, but some tables could not be described.",
+    "startScan": "Start scan",
+    "history": "Scan history",
+    "tokens": "Tokens",
+    "noScans": "This source has not been scanned yet.",
+    "stage": {
+      "introspect": "Reading schema",
+      "profile": "Profiling columns",
+      "probe": "Inferring relationships",
+      "describe": "Describing tables",
+      "embed": "Indexing descriptions",
+      "diff": "Finalizing",
+      "status": "Status",
+      "done": "Done"
+    }
   }
 }
