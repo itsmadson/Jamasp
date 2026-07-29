@@ -26,7 +26,18 @@ DESCRIBE_SCHEMA: dict[str, Any] = {
                     "name": {"type": "string"},
                     "meaning": BILINGUAL,
                     "unit": {"type": ["string", "null"]},
-                    "enum_map": {"type": ["object", "null"]},
+                    "enum_values": {
+                        "type": ["array", "null"],
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "code": {"type": "string"},
+                                "fa": {"type": "string"},
+                                "en": {"type": "string"},
+                            },
+                            "required": ["code", "fa", "en"],
+                        },
+                    },
                     "confidence": {"type": "number", "minimum": 0, "maximum": 1},
                 },
                 "required": ["name", "meaning", "confidence"],
@@ -43,7 +54,7 @@ Rules:
 - Write every summary and meaning in BOTH Persian (fa) and English (en). They must say the same
   thing.
 - Coded columns (integer status/type columns with few distinct values) are the priority: infer
-  what each code means and fill enum_map. Column comments often contain the decoding.
+  what each code means and fill enum_values with one entry per code. Column comments often contain the decoding.
 - Values shown as *** are masked personal data. Never speculate about the hidden characters.
 - Report low confidence honestly when the evidence is weak. A wrong confident guess is worse than
   an admitted uncertainty, because a human reviews this and trusts your confidence signal.

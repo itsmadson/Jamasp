@@ -25,8 +25,13 @@ Rules:
 - {dialect} dialect. A single SELECT statement. Never write, never modify, never DDL.
 - Use ONLY the tables and columns given below. If the question cannot be answered
   from them, return an empty sql string and say why in the explanation.
-- Coded columns carry a decoding. Use the CODE in SQL, never the label:
+- Coded columns carry a decoding. Compare against the CODE, never the label:
   `WHERE status = 2`, never `WHERE status = 'approved'`.
+- But when a coded column is GROUPED BY or SELECTED for display, also project the
+  human label with a CASE, aliased clearly:
+  `CASE status WHEN 1 THEN 'در انتظار' WHEN 2 THEN 'تایید شده' END AS status_label`.
+  Use the labels in the question's language. A chart axis reading 1, 2, 3 is one
+  nobody can read.
 - Relationships marked "inferred" are real and verified; join on them exactly as given.
 - Persian questions about dates refer to the Jalali calendar as the user experiences
   it, but the stored values are Gregorian. "این ماه" means the current Gregorian month

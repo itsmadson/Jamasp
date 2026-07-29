@@ -38,6 +38,24 @@ class EntityDescription:
         }
 
 
+def _normalise_enum(field: dict[str, Any]) -> dict[str, Any]:
+    """Accept the list the schema asks for, and the map older records already hold.
+
+    Strict JSON schema cannot describe an open-ended map, so the model returns a
+    list of {code, fa, en}; everything downstream expects {code: {fa, en}}.
+    """
+    values = field.pop("enum_values", None)
+    if isinstance(values, list):
+        field["enum_map"] = {
+            str(item["code"]): {"fa": item.get("fa", ""), "en": item.get("en", "")}
+            for item in values
+            if isinstance(item, dict) and item.get("code") is not None
+        } or None
+    elif "enum_map" not in field:
+        field["enum_map"] = None
+    return field
+
+
 def _parse(text: str) -> EntityDescription:
     payload = json.loads(text)
     missing = [key for key in REQUIRED_KEYS if key not in payload]
@@ -51,7 +69,7 @@ def _parse(text: str) -> EntityDescription:
         grain=payload["grain"],
         business_domain=payload.get("business_domain"),
         common_questions=payload.get("common_questions", []),
-        fields=payload["fields"],
+        fields=[_normalise_enum(dict(field)) for field in payload["fields"]],
         confidence=float(payload["confidence"]),
     )
 

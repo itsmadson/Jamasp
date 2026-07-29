@@ -31,7 +31,10 @@ def _convert(node: Any) -> Any:
 
     converted = {key: _convert(value) for key, value in node.items()}
 
-    if converted.get("type") == "object" and "properties" in converted:
+    kinds = converted.get("type")
+    kinds = kinds if isinstance(kinds, list) else [kinds]
+
+    if "object" in kinds and "properties" in converted:
         properties = converted["properties"]
         previously_required = set(converted.get("required") or properties.keys())
 

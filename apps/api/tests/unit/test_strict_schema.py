@@ -45,3 +45,24 @@ def test_generate_sql_schema_converts_too():
     converted = strict(GENERATE_SQL_SCHEMA)
     assert converted["additionalProperties"] is False
     assert set(converted["required"]) == set(converted["properties"])
+
+
+def test_object_typed_as_a_nullable_union_also_gets_the_strict_keys():
+    """A dynamic map typed as ["object","null"] slipped through and produced a 400."""
+    schema = {
+        "type": "object",
+        "properties": {"blob": {"type": ["object", "null"], "properties": {}}},
+        "required": ["blob"],
+    }
+    converted = strict(schema)
+    blob = converted["properties"]["blob"]
+    assert blob["additionalProperties"] is False
+
+
+def test_describe_schema_has_no_free_form_object():
+    """Strict mode cannot express an open-ended map, so the schema must not use one."""
+    for node in _walk(strict(DESCRIBE_SCHEMA)):
+        types = node.get("type")
+        types = types if isinstance(types, list) else [types]
+        if "object" in types:
+            assert node.get("properties"), "an object with no properties cannot be strict"
