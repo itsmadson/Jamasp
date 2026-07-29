@@ -7,7 +7,7 @@ import pytest_asyncio
 from sqlalchemy import select
 
 from agah.llm.base import Completion
-from agah.models.entity import Entity, EntityStatus
+from agah.models.entity import Entity, EntityStatus, Field, PIIClass
 from agah.models.relationship import Relationship, RelationshipKind
 from agah.models.scan import Scan, ScanStatus
 from agah.models.source import DataSource, SamplingPolicy, SourceKind
@@ -161,6 +161,72 @@ async def test_describe_failure_isolates_to_one_entity(session, hr_source, stub_
         )
     ).all()
     assert [entity.name for entity in failed] == ["t_mst_01"]
+
+
+@pytest.mark.asyncio
+async def test_embedding_failure_degrades_instead_of_discarding_the_scan(
+    session, hr_source, monkeypatch
+):
+    """Embeddings serve S2 retrieval; losing them must not throw away descriptions.
+
+    A self-hosted install with no local embedding service is a normal state, not
+    a reason to discard a scan that cost real tokens to produce.
+    """
+
+    async def fake_call(session_, task, messages, **kwargs):
+        return Completion(
+            text=json.dumps(CASSETTE), tokens_in=50, tokens_out=80,
+            model="stub", provider="stub", latency_ms=1,
+        )
+
+    async def unreachable_embedder(session_, texts, scan_id=None):
+        raise ConnectionError("All connection attempts failed")
+
+    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("agah.pipeline.embed.embed_texts", unreachable_embedder)
+
+    scan = await run_scan(session, hr_source.pending_scan_id)
+
+    assert scan.status is ScanStatus.PARTIAL
+    assert "embed" in json.dumps(scan.error)
+
+    entities = (
+        await session.scalars(select(Entity).where(Entity.data_source_id == hr_source.id))
+    ).all()
+    assert entities, "descriptions were discarded along with the embeddings"
+    assert all(entity.description_ai is not None for entity in entities)
+    assert all(entity.embedding is None for entity in entities)
+
+
+@pytest.mark.asyncio
+async def test_scan_persists_the_profiler_pii_classification(session, hr_source, stub_llm):
+    """The classification must reach the stored field, not just the prompt filter.
+
+    Masking protects the LLM prompt, but the review UI and the knowledge export
+    both read Field.pii_class. Leaving it at the default would tell a reviewer
+    that a national ID column holds no personal data.
+    """
+    await run_scan(session, hr_source.pending_scan_id)
+
+    employees = (
+        await session.scalars(
+            select(Entity).where(
+                Entity.data_source_id == hr_source.id, Entity.name == "employees"
+            )
+        )
+    ).one()
+    fields = (
+        await session.scalars(select(Field).where(Field.entity_id == employees.id))
+    ).all()
+    by_name = {field.name: field for field in fields}
+
+    assert by_name["national_id"].pii_class is PIIClass.HIGH
+    assert by_name["salary"].pii_class is PIIClass.HIGH
+    assert by_name["mobile"].pii_class is PIIClass.LOW
+    assert by_name["dept_id"].pii_class is PIIClass.NONE
+
+    # Column statistics are what let a reviewer judge a description.
+    assert by_name["dept_id"].stats is not None
 
 
 @pytest.mark.asyncio

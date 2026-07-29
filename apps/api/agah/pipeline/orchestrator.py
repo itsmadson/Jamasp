@@ -26,7 +26,7 @@ from agah.pipeline.describe import DescribeFailed, EntityDescription, describe_e
 from agah.pipeline.diff import SnapshotDiff, diff_snapshots
 from agah.pipeline.embed import embed_entities
 from agah.pipeline.probe import probe_relationships
-from agah.pipeline.profile import profile_entity
+from agah.pipeline.profile import EntityProfile, profile_entity
 from agah.pipeline.snapshot import (
     ColumnInfo,
     EntitySnapshot,
@@ -208,6 +208,34 @@ async def _sync_fields(
     await session.flush()
 
 
+def _jsonable(value: Any) -> Any:
+    """Dates, Decimals and UUIDs come back from drivers as native objects; JSONB
+    only takes primitives, so anything exotic is stored as its string form."""
+    if value is None or isinstance(value, str | int | float | bool):
+        return value
+    if isinstance(value, list | tuple):
+        return [_jsonable(item) for item in value]
+    return str(value)
+
+
+async def _apply_profile(session: AsyncSession, entity: Entity, profile: EntityProfile) -> None:
+    by_name = {column.name: column for column in profile.columns}
+    for field in await _load_fields(session, entity):
+        column = by_name.get(field.name)
+        if column is None:
+            continue
+        field.pii_class = column.pii_class
+        field.stats = {
+            "distinct_count": column.distinct_count,
+            "null_ratio": column.null_ratio,
+            "min_value": _jsonable(column.min_value),
+            "max_value": _jsonable(column.max_value),
+            "sample_values": _jsonable(column.sample_values),
+        }
+    entity.row_count_approx = profile.row_count
+    await session.flush()
+
+
 async def _persist_relationships(
     session: AsyncSession,
     source: DataSource,
@@ -342,9 +370,14 @@ async def run_scan(
         profiles = {}
         for index, (identity, entity) in enumerate(todo):
             _emit(progress, "profile", index, len(todo), entity.name)
-            profiles[identity] = await profile_entity(
+            profile = await profile_entity(
                 adapter, by_identity[identity], source.sampling_policy
             )
+            profiles[identity] = profile
+            # The classification has to reach the stored field: the review UI and
+            # the knowledge export both read it, and defaulting to "none" would
+            # tell a reviewer a national ID column holds no personal data.
+            await _apply_profile(session, entity, profile)
 
         _emit(progress, "probe", 0, 1, "inferring relationships")
         candidates = await probe_relationships(adapter, snapshot)
@@ -377,11 +410,17 @@ async def run_scan(
         describable = [
             entity for _, entity in todo if entity.status is not EntityStatus.DESCRIBE_FAILED
         ]
-        await embed_entities(
-            session,
-            [(entity, await _load_fields(session, entity)) for entity in describable],
-            scan.id,
-        )
+        try:
+            await embed_entities(
+                session,
+                [(entity, await _load_fields(session, entity)) for entity in describable],
+                scan.id,
+            )
+        except Exception as exc:  # noqa: BLE001 - degrade, never discard the descriptions
+            # Embeddings only speed up table retrieval for the query engine. A
+            # deployment with no embedding service is a normal state, and the
+            # descriptions this scan just paid for stay valid without them.
+            failures.append({"stage": "embed", "error": str(exc)})
 
         _emit(progress, "diff", 0, 1, "finalizing")
         for identity in delta.removed:

@@ -7,7 +7,6 @@ local Ollama model is a settings change, not a code change.
 
 import asyncio
 import base64
-import os
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
@@ -15,6 +14,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agah.config import get_settings
 from agah.llm.base import Completion
 from agah.llm.openai_compat import OpenAICompatProvider
 from agah.models.observability import LLMCall, Setting
@@ -56,11 +56,6 @@ DEFAULT_ROUTES: dict[str, TaskRoute] = {
     ),
 }
 
-DEFAULT_PROVIDER_ENV = {
-    "openrouter": ("AGAH_OPENROUTER_BASE_URL", "AGAH_OPENROUTER_API_KEY"),
-    "gapgpt": ("AGAH_GAPGPT_BASE_URL", "AGAH_GAPGPT_API_KEY"),
-    "local": ("AGAH_LOCAL_BASE_URL", "AGAH_LOCAL_API_KEY"),
-}
 
 
 def build_provider(name: str, config: dict[str, Any]) -> OpenAICompatProvider:
@@ -80,12 +75,10 @@ async def _load_setting(session: AsyncSession, key: str) -> dict[str, Any]:
 async def load_provider_config(session: AsyncSession) -> dict[str, dict[str, Any]]:
     """Stored settings win; otherwise fall back to environment configuration."""
     stored = await _load_setting(session, PROVIDERS_KEY)
-    resolved: dict[str, dict[str, Any]] = {}
-    for name, (base_url_env, api_key_env) in DEFAULT_PROVIDER_ENV.items():
-        resolved[name] = {
-            "base_url": os.environ.get(base_url_env, ""),
-            "api_key": os.environ.get(api_key_env, ""),
-        }
+    # Settings reads .env; os.environ alone would miss anything configured there.
+    resolved: dict[str, dict[str, Any]] = {
+        name: dict(config) for name, config in get_settings().provider_defaults().items()
+    }
     for name, config in stored.items():
         merged = {**config}
         stored_key = merged.get("api_key")
