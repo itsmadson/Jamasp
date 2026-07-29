@@ -164,6 +164,11 @@
     "empty": "هنوز گزارشی ساخته نشده است.",
     "failed": "ساخت گزارش انجام نشد.",
     "back": "همه گزارش‌ها",
-    "openReport": "بازکردن"
+    "openReport": "بازکردن",
+    "chatTitle": "تغییر این گزارش",
+    "chatPlaceholder": "نمودار را خطی کن",
+    "chatSend": "اعمال",
+    "chatApplying": "در حال اعمال…",
+    "chatRejected": "این تغییر اعمال نشد"
   }
 }

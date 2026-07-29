@@ -16,6 +16,7 @@ from agah.models.source import DataSource
 from agah.models.user import User
 from agah.pipeline.orchestrator import decrypt_config
 from agah.query.pipeline import QueryFailed, answer_question, infer_columns
+from agah.report.edit import EditRejected, edit_report_spec
 from agah.report.generate import design_report
 from agah.routers.knowledge import export_knowledge
 from agah.security.deps import current_user
@@ -27,6 +28,11 @@ class CreateReportRequest(BaseModel):
     question: str
     locale: str = "fa"
     row_limit: int = 1000
+
+
+class EditReportRequest(BaseModel):
+    instruction: str
+    locale: str = "fa"
 
 
 class ReportSummaryOut(BaseModel):
@@ -203,4 +209,55 @@ async def get_report(
         columns=columns,
         rows=rows,
         row_count=len(rows),
+    )
+
+
+@router.post("/api/reports/{report_id}/chat", response_model=ReportOut)
+async def chat_edit_report(
+    report_id: UUID,
+    payload: EditReportRequest,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_user),
+) -> ReportOut:
+    """Change a report by describing the change.
+
+    The edit is validated by the same rules that guard generation, and a rejected
+    edit leaves the stored layout untouched.
+    """
+    current = await get_report(report_id, refresh=True, session=session, user=user)
+
+    try:
+        updated = await edit_report_spec(
+            session,
+            current.spec,
+            current.columns,
+            current.row_count,
+            payload.instruction,
+            locale=payload.locale,
+        )
+    except EditRejected as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            {"status": "edit_rejected", "message": str(exc), "sql": None},
+        ) from exc
+
+    report = await session.get(Report, report_id)
+    if report is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "report not found")
+    report.spec = updated
+    report.title = updated["title"]
+    await session.flush()
+
+    return ReportOut(
+        id=report.id,
+        data_source_id=report.data_source_id,
+        title=updated["title"],
+        locale=report.locale,
+        created_at=report.created_at,
+        spec=updated,
+        sql=current.sql,
+        explanation=current.explanation,
+        columns=current.columns,
+        rows=current.rows,
+        row_count=current.row_count,
     )

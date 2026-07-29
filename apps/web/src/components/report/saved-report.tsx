@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getReport, type Report } from "@/lib/api/reports";
 
+import { ReportChat } from "./report-chat";
 import { ReportView } from "./report-view";
 
 export function SavedReport({ locale, reportId }: { locale: string; reportId: string }) {
@@ -32,15 +33,26 @@ export function SavedReport({ locale, reportId }: { locale: string; reportId: st
   if (!report) return <p className="text-sm text-muted">…</p>;
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <ReportView
         spec={report.spec}
         columns={report.columns}
         rows={report.rows}
         locale={locale}
       />
+
+      <ReportChat
+        reportId={reportId}
+        locale={locale}
+        onUpdated={(updated) =>
+          // The edit endpoint returns the refreshed rows too, so the page never
+          // shows a new layout over stale numbers.
+          setReport(updated)
+        }
+      />
+
       {report.sql ? (
-        <details className="mt-6 rounded-lg border border-border">
+        <details className="rounded-lg border border-border">
           <summary className="cursor-pointer px-4 py-2 text-sm font-medium">SQL</summary>
           <pre className="identifier overflow-x-auto px-4 pb-4 text-xs">{report.sql}</pre>
         </details>

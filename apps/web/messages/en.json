@@ -164,6 +164,11 @@
     "empty": "No reports yet.",
     "failed": "Could not build the report.",
     "back": "All reports",
-    "openReport": "Open"
+    "openReport": "Open",
+    "chatTitle": "Change this report",
+    "chatPlaceholder": "Make it a line chart",
+    "chatSend": "Apply",
+    "chatApplying": "Applying…",
+    "chatRejected": "That change was not applied"
   }
 }

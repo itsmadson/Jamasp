@@ -54,3 +54,29 @@ export function listReports(sourceId: string): Promise<ReportSummary[]> {
 export function getReport(reportId: string): Promise<Report> {
   return apiFetch<Report>(`/api/reports/${reportId}`);
 }
+
+export async function editReport(
+  reportId: string,
+  instruction: string,
+  locale: string,
+): Promise<Report> {
+  try {
+    return await apiFetch<Report>(`/api/reports/${reportId}/chat`, {
+      method: "POST",
+      body: JSON.stringify({ instruction, locale }),
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 422) {
+      const detail = error.payload as { status?: string; message?: string } | null;
+      if (detail?.status) {
+        // A rejected edit is a considered answer: the report is unchanged.
+        throw new QueryRefused(
+          detail.status as QueryFailureStatus,
+          detail.message ?? "",
+          null,
+        );
+      }
+    }
+    throw error;
+  }
+}
