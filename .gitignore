@@ -17,3 +17,6 @@ venv/
 .DS_Store
 *.log
 .claude/settings.local.json
+.next/
+out/
+next-env.d.ts
