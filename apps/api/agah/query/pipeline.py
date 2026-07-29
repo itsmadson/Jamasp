@@ -38,7 +38,7 @@ class QueryResult:
     assumptions: list[str] = field(default_factory=list)
 
 
-def _infer_columns(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
+def infer_columns(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     """Types come from the data itself so S3 can pick chart forms without guessing."""
     if not rows:
         return []
@@ -133,7 +133,7 @@ async def answer_question(
         sql=bounded,
         explanation=explanation,
         tables_used=payload.get("tables_used") or [entity["name"] for entity in selected],
-        columns=_infer_columns(rows),
+        columns=infer_columns(rows),
         rows=rows,
         row_count=len(rows),
         duration_ms=duration_ms,

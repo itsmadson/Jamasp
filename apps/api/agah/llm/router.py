@@ -57,6 +57,12 @@ DEFAULT_ROUTES: dict[str, TaskRoute] = {
         temperature=0.0,
         fallbacks=[("openrouter", "inclusionai/ling-3.0-flash:free"), ("gapgpt", "gpt-4o")],
     ),
+    "design_report": TaskRoute(
+        task="design_report",
+        provider="openrouter",
+        model="nvidia/nemotron-3-ultra-550b-a55b:free",
+        fallbacks=[("openrouter", "inclusionai/ling-3.0-flash:free"), ("gapgpt", "gpt-4o")],
+    ),
     "embed": TaskRoute(task="embed", provider="local", model="bge-m3"),
     "translate": TaskRoute(
         task="translate", provider="openrouter", model="inclusionai/ling-3.0-flash:free"
