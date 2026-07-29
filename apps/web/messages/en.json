@@ -10,5 +10,15 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "auth": {
+    "title": "Sign in to Agah",
+    "subtitle": "Connect your data, verify what the AI understood, then ask for reports.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "signOut": "Sign out",
+    "unexpectedError": "Could not reach the server. Check that the API is running."
   }
 }
