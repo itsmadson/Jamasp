@@ -20,5 +20,28 @@
     "signingIn": "Signing in…",
     "signOut": "Sign out",
     "unexpectedError": "Could not reach the server. Check that the API is running."
+  },
+  "sources": {
+    "title": "Data sources",
+    "subtitle": "Connect a database, then verify what the AI understood about it.",
+    "addSource": "Add source",
+    "addTitle": "Add a data source",
+    "name": "Name",
+    "kind": "Type",
+    "connectionString": "Connection string",
+    "connectionHint": "Stored encrypted. Never shown again after saving.",
+    "samplingPolicy": "Data exposure",
+    "samplingMasked": "Sampled values, PII masked",
+    "samplingSchemaOnly": "Schema and statistics only",
+    "samplingHint": "Masked sampling lets the AI decode coded columns such as status = 1, 2, 3.",
+    "testConnection": "Test connection",
+    "connectionFailed": "Could not connect with those details.",
+    "saveFailed": "Could not save the source.",
+    "empty": "No data sources yet.",
+    "status": "Status",
+    "lastScan": "Last scan",
+    "never": "Never",
+    "loading": "Loading…",
+    "loadFailed": "Could not load data sources."
   }
 }
