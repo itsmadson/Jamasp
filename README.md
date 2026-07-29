@@ -3,8 +3,8 @@
 An AI report builder. Connect a database, verify what the AI understood about it,
 then ask for reports in Persian or English.
 
-The platform is built in five subsystems. **the whole loop works for PostgreSQL
-sources.** Connect a database, verify what the AI understood about it, ask a question
+The platform is built in five subsystems. **The whole loop works for PostgreSQL
+sources:** connect a database, verify what the AI understood about it, ask a question
 in Persian or English, and get a report page with charts you can then change by
 describing the change.
 
