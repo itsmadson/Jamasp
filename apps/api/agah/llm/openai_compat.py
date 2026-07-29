@@ -14,6 +14,27 @@ from agah.llm.base import Completion
 TIMEOUT_SECONDS = 120.0
 
 
+class ProviderResponseError(Exception):
+    """The provider answered, but not with a usable completion.
+
+    Kept distinct from a transport error because the cause is almost always in
+    the request (an unsupported response_format, an exhausted quota) and the
+    provider says so in the body.
+    """
+
+
+def _provider_message(body: Any) -> str | None:
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict) and error.get("message"):
+            return str(error["message"])
+        if isinstance(error, str):
+            return error
+        if body.get("message"):
+            return str(body["message"])
+    return None
+
+
 class OpenAICompatProvider:
     def __init__(
         self,
@@ -26,6 +47,11 @@ class OpenAICompatProvider:
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._extra_headers = extra_headers or {}
+        # Overridden in tests with httpx.MockTransport.
+        self._transport: httpx.AsyncBaseTransport | None = None
+
+    def _client(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(timeout=TIMEOUT_SECONDS, transport=self._transport)
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -33,6 +59,30 @@ class OpenAICompatProvider:
             "Content-Type": "application/json",
             **self._extra_headers,
         }
+
+    async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        async with self._client() as client:
+            response = await client.post(
+                f"{self._base_url}{path}", json=payload, headers=self._headers()
+            )
+
+        try:
+            body = response.json()
+        except ValueError:
+            body = None
+
+        if response.status_code >= 400:
+            message = _provider_message(body) or response.text[:300] or response.reason_phrase
+            raise ProviderResponseError(f"HTTP {response.status_code}: {message}")
+
+        # Several gateways answer 200 with an error body rather than a status code.
+        message = _provider_message(body)
+        if message:
+            raise ProviderResponseError(message)
+
+        if not isinstance(body, dict):
+            raise ProviderResponseError("provider returned a non-object response")
+        return body
 
     async def complete(
         self,
@@ -56,16 +106,15 @@ class OpenAICompatProvider:
             }
 
         started = time.perf_counter()
-        async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
-            response = await client.post(
-                f"{self._base_url}/chat/completions", json=payload, headers=self._headers()
-            )
-            response.raise_for_status()
-            body = response.json()
+        body = await self._post("/chat/completions", payload)
+
+        choices = body.get("choices") or []
+        if not choices:
+            raise ProviderResponseError("provider returned no choices")
 
         usage = body.get("usage") or {}
         return Completion(
-            text=body["choices"][0]["message"]["content"] or "",
+            text=(choices[0].get("message") or {}).get("content") or "",
             tokens_in=int(usage.get("prompt_tokens", 0)),
             tokens_out=int(usage.get("completion_tokens", 0)),
             model=model,
@@ -74,12 +123,8 @@ class OpenAICompatProvider:
         )
 
     async def embed(self, texts: list[str], *, model: str) -> list[list[float]]:
-        async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
-            response = await client.post(
-                f"{self._base_url}/embeddings",
-                json={"model": model, "input": texts},
-                headers=self._headers(),
-            )
-            response.raise_for_status()
-            body = response.json()
-        return [item["embedding"] for item in body["data"]]
+        body = await self._post("/embeddings", {"model": model, "input": texts})
+        data = body.get("data")
+        if not data:
+            raise ProviderResponseError("provider returned no embeddings")
+        return [item["embedding"] for item in data]
