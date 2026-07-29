@@ -125,44 +125,52 @@ async def call_task(
     route = await load_route(session, task)
     providers_config = await load_provider_config(session)
     attempts = [(route.provider, route.model), *route.fallbacks]
-    last_error: Exception | None = None
+    # Every attempt is kept: reporting only the last one hides why the primary
+    # failed, which is the single most useful fact when a chain exhausts.
+    failures: list[str] = []
 
     for provider_name, model in attempts:
         provider = build_provider(provider_name, providers_config.get(provider_name, {}))
+        attempt_error: Exception | None = None
+
         for attempt in range(max_attempts_per_model):
             try:
                 completion = await provider.complete(
                     messages, model=model, schema=schema, temperature=route.temperature
                 )
             except Exception as exc:  # noqa: BLE001 - any failure should fall back, not crash
-                last_error = exc
+                attempt_error = exc
                 if attempt + 1 < max_attempts_per_model:
                     await asyncio.sleep(2**attempt)
                 continue
+            attempt_error = None
+            break
 
+        if attempt_error is not None:
+            detail = f"{provider_name}/{model}: {attempt_error}"
+            failures.append(detail)
             session.add(
                 LLMCall(
-                    scan_id=scan_id,
-                    purpose=task,
-                    provider=provider_name,
-                    model=model,
-                    tokens_in=completion.tokens_in,
-                    tokens_out=completion.tokens_out,
-                    latency_ms=completion.latency_ms,
-                    status="ok",
+                    scan_id=scan_id, purpose=task, provider=provider_name, model=model,
+                    tokens_in=0, tokens_out=0, status="failed", error=str(attempt_error)[:2000],
                 )
             )
-            return completion
+            continue
 
-    session.add(
-        LLMCall(
-            scan_id=scan_id,
-            purpose=task,
-            provider=route.provider,
-            model=route.model,
-            tokens_in=0,
-            tokens_out=0,
-            status="failed",
+        session.add(
+            LLMCall(
+                scan_id=scan_id,
+                purpose=task,
+                provider=provider_name,
+                model=model,
+                tokens_in=completion.tokens_in,
+                tokens_out=completion.tokens_out,
+                latency_ms=completion.latency_ms,
+                status="ok",
+            )
         )
+        return completion
+
+    raise RouteExhaustedError(
+        f"all providers failed for task {task}: " + " | ".join(failures)
     )
-    raise RouteExhaustedError(f"all providers failed for task {task}: {last_error}")
