@@ -116,5 +116,21 @@
     "confirmWarning": "Approved descriptions are what the query engine trusts. Spot-check a few before confirming.",
     "confirm": "Confirm",
     "failed": "Bulk approval did not complete."
+  },
+  "settings": {
+    "title": "Settings",
+    "llmTitle": "Models",
+    "llmSubtitle": "Each task picks its own provider and model. Switching to a local model needs no code change.",
+    "providersTitle": "Providers",
+    "providersSubtitle": "Keys are stored encrypted and never shown again.",
+    "task": "Task",
+    "provider": "Provider",
+    "model": "Model",
+    "baseUrl": "Base URL",
+    "apiKey": "API key",
+    "apiKeyHint": "Leave untouched to keep the stored key.",
+    "save": "Save",
+    "saved": "Saved.",
+    "failed": "Could not save settings."
   }
 }
