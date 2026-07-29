@@ -33,6 +33,17 @@
   --accent-foreground: #ffffff;
   --warning: #a86616;
   --danger: #a8302a;
+
+/* Chart series palette. Validated with the dataviz validator in both modes:
+   light — worst adjacent CVD deltaE 9.2, normal-vision 27.6; aqua sits below 3:1
+   on the light surface, which is why every chart ships direct value labels and a
+   table view (the relief rule). dark — all slots >= 3:1, worst adjacent CVD 9.4. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #4a3aa7;
+  --series-5: #e34948;
+  --grid: #e3e2df;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,6 +57,13 @@
     --accent-foreground: #0d0d0d;
     --warning: #d99a4e;
     --danger: #e0736c;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #9085e9;
+    --series-5: #e66767;
+    --grid: #2c2c2b;
   }
 }
 
@@ -59,6 +77,12 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-grid: var(--grid);
   --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
 }

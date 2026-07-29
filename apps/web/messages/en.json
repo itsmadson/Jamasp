@@ -44,7 +44,8 @@
     "loading": "Loading…",
     "loadFailed": "Could not load data sources.",
     "review": "Review",
-    "ask": "Ask"
+    "ask": "Ask",
+    "reports": "Reports"
   },
   "scan": {
     "starting": "Starting scan…",
@@ -151,5 +152,18 @@
     "refusal.generation_failed": "The model could not produce a usable query",
     "refusal.unsafe": "The generated query was refused",
     "refusal.execution_failed": "The query failed to run"
+  },
+  "report": {
+    "title": "Reports",
+    "noRows": "No rows to show.",
+    "dataTable": "Show the numbers",
+    "create": "Create report",
+    "creating": "Building report…",
+    "question": "What do you want a report about?",
+    "placeholder": "Leave requests by status",
+    "empty": "No reports yet.",
+    "failed": "Could not build the report.",
+    "back": "All reports",
+    "openReport": "Open"
   }
 }

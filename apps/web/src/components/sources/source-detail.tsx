@@ -65,6 +65,12 @@ export function SourceDetail({ locale, sourceId }: { locale: string; sourceId: s
             {sourcesT("review")}
           </Link>
           <Link
+            href={`/${locale}/sources/${sourceId}/reports`}
+            className="rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
+          >
+            {sourcesT("reports")}
+          </Link>
+          <Link
             href={`/${locale}/sources/${sourceId}/ask`}
             className="rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
           >
