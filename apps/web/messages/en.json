@@ -107,5 +107,14 @@
     "questions": "Answers questions like",
     "saveFailed": "Could not save the change.",
     "loadFailed": "Could not load the table."
+  },
+  "bulk": {
+    "approveAll": "Approve all above threshold",
+    "threshold": "Confidence threshold",
+    "confirmTitle": "Approve in bulk?",
+    "confirmBody": "This approves up to {count} tables scored at or above {threshold}% confidence.",
+    "confirmWarning": "Approved descriptions are what the query engine trusts. Spot-check a few before confirming.",
+    "confirm": "Confirm",
+    "failed": "Bulk approval did not complete."
   }
 }
