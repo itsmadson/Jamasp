@@ -3,6 +3,7 @@
 from agah.models.base import Base
 from agah.models.entity import Entity, EntityStatus, Field, PIIClass
 from agah.models.observability import LLMCall, Setting
+from agah.models.query import Query, QueryStatus
 from agah.models.relationship import Relationship, RelationshipKind, RelationshipStatus
 from agah.models.scan import Scan, ScanStatus
 from agah.models.source import DataSource, SamplingPolicy, SourceKind, SourceStatus
@@ -16,6 +17,8 @@ __all__ = [
     "Field",
     "LLMCall",
     "PIIClass",
+    "Query",
+    "QueryStatus",
     "Relationship",
     "RelationshipKind",
     "RelationshipStatus",
