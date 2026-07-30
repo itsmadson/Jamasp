@@ -1,4 +1,4 @@
-# جاماسپ
+# جاماسپ (اوستایی: Jāmāspa)
 
 An AI report builder. Connect a database, verify what the AI understood about it,
 then ask for reports in Persian or English.
