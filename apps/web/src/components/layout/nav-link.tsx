@@ -10,7 +10,19 @@ import { usePathname } from "next/navigation";
  * so this is the smallest possible client boundary rather than making the whole
  * shell a client component.
  */
-export function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+export function NavLink({
+  href,
+  icon,
+  children,
+}: {
+  href: string;
+  /**
+   * A rendered element, not a component. The shell is a server component, and a
+   * function cannot cross that boundary — only its output can.
+   */
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const active = pathname === href || pathname.startsWith(`${href}/`);
 
@@ -20,10 +32,12 @@ export function NavLink({ href, children }: { href: string; children: React.Reac
       aria-current={active ? "page" : undefined}
       className={
         active
-          ? "rounded-lg bg-surface px-3 py-1.5 font-medium text-foreground"
-          : "rounded-lg px-3 py-1.5 text-muted transition-colors hover:text-foreground"
+          ? "flex items-center gap-2 rounded-lg bg-surface px-3 py-1.5 font-medium text-foreground"
+          : "flex items-center gap-2 rounded-lg px-3 py-1.5 text-muted transition-colors hover:text-foreground"
       }
     >
+      {/* Decorative: the label beside it already names the destination. */}
+      {icon}
       {children}
     </Link>
   );

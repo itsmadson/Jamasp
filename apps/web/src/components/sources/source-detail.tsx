@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  FileChartColumn,
+  ListChecks,
+  MessageCircleQuestion,
+  ScanSearch,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -60,23 +66,32 @@ export function SourceDetail({ locale, sourceId }: { locale: string; sourceId: s
         <div className="flex items-center gap-2">
           <Link
             href={`/${locale}/sources/${sourceId}/review`}
-            className="rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
+            className="flex items-center gap-1.5 rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
           >
+            <ListChecks aria-hidden size={15} />
             {sourcesT("step2")}
           </Link>
           <Link
             href={`/${locale}/sources/${sourceId}/reports`}
-            className="rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
+            className="flex items-center gap-1.5 rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
           >
+            <FileChartColumn aria-hidden size={15} />
             {sourcesT("step3")}
           </Link>
           <Link
             href={`/${locale}/sources/${sourceId}/ask`}
-            className="rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
+            className="flex items-center gap-1.5 rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
           >
+            <MessageCircleQuestion aria-hidden size={15} />
             {sourcesT("ask")}
           </Link>
-          <Button onClick={handleStart} disabled={starting} type="button">
+          <Button
+            onClick={handleStart}
+            disabled={starting}
+            type="button"
+            className="flex items-center gap-1.5"
+          >
+            <ScanSearch aria-hidden size={15} className={starting ? "animate-pulse" : undefined} />
             {sourcesT("step1")}
           </Button>
         </div>

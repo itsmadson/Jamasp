@@ -1,5 +1,6 @@
 "use client";
 
+import { Database, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type { SourceOut } from "@/lib/api/types";
@@ -28,8 +29,9 @@ export function SourcePicker({
     return (
       <a
         href={`/${locale}/sources`}
-        className="rounded-lg border border-dashed border-border px-3 py-1.5 text-sm text-muted hover:border-accent hover:text-foreground"
+        className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-sm text-muted hover:border-accent hover:text-foreground"
       >
+        <Plus aria-hidden size={15} />
         {t("noSources")}
       </a>
     );
@@ -37,7 +39,10 @@ export function SourcePicker({
 
   return (
     <label className="flex items-center gap-2 text-sm">
-      <span className="text-muted">{t("source")}</span>
+      <span className="flex items-center gap-1.5 text-muted">
+        <Database aria-hidden size={15} />
+        {t("source")}
+      </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}

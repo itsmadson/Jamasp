@@ -1,5 +1,6 @@
 "use client";
 
+import { Printer } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,12 @@ export function ExportButton() {
   const t = useTranslations("report");
 
   return (
-    <Button variant="secondary" onClick={() => window.print()} className="print:hidden">
+    <Button
+      variant="secondary"
+      onClick={() => window.print()}
+      className="flex items-center gap-1.5 print:hidden"
+    >
+      <Printer aria-hidden size={15} />
       {t("exportPdf")}
     </Button>
   );
