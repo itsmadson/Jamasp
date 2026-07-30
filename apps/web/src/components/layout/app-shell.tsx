@@ -40,10 +40,9 @@ export async function AppShell({
         <div className="flex items-center gap-7">
           <Link
             href={`/${locale}/dashboard`}
-            className="flex items-baseline gap-2 text-lg font-bold tracking-tight"
+            className="text-lg font-bold tracking-tight"
           >
             {app("name")}
-            <span className="text-[10px] font-normal text-muted">{app("tagline")}</span>
           </Link>
           <nav className="flex items-center gap-1 text-sm">
             {links.map((link) => (
