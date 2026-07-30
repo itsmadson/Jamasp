@@ -1,12 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
-import { ask, QueryRefused, type AskResponse } from "@/lib/api/query";
-import { formatNumber } from "@/lib/format";
+import {
+  ask,
+  queryHistory,
+  QueryRefused,
+  type AskResponse,
+  type QueryHistoryEntry,
+} from "@/lib/api/query";
+import { formatDate, formatNumber } from "@/lib/format";
 import type { Locale } from "@/i18n/routing";
 
 import { ResultTable } from "./result-table";
@@ -24,6 +30,13 @@ export function AskScreen({ locale, sourceId }: { locale: string; sourceId: stri
   const [refusal, setRefusal] = useState<Refusal | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [history, setHistory] = useState<QueryHistoryEntry[]>([]);
+
+  const reloadHistory = useCallback(() => {
+    queryHistory(sourceId).then(setHistory).catch(() => setHistory([]));
+  }, [sourceId]);
+
+  useEffect(reloadHistory, [reloadHistory]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -33,11 +46,15 @@ export function AskScreen({ locale, sourceId }: { locale: string; sourceId: stri
     setPending(true);
     try {
       setAnswer(await ask(sourceId, question, locale));
+      reloadHistory();
     } catch (caught) {
       if (caught instanceof QueryRefused) {
         // A refusal is a considered outcome, not a crash: show what it declined
         // to do and why.
         setRefusal({ status: caught.status, message: caught.message, sql: caught.sql });
+        // A refusal is recorded too — the history is what was asked, not only
+        // what succeeded.
+        reloadHistory();
       } else {
         setError(caught instanceof ApiError ? caught.detail : t("failed"));
       }
@@ -123,6 +140,61 @@ export function AskScreen({ locale, sourceId }: { locale: string; sourceId: stri
             <pre className="identifier overflow-x-auto px-4 pb-4 text-xs">{answer.sql}</pre>
           </details>
         </div>
+      ) : null}
+      {history.length > 0 ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-medium text-muted">{t("history")}</h2>
+          <ul className="divide-y divide-border rounded-lg border border-border">
+            {history.map((entry) => (
+              <li key={entry.id} className="px-4 py-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuestion(entry.question)}
+                    className="text-start text-sm hover:text-accent"
+                    title={t("reuse")}
+                  >
+                    {entry.question}
+                  </button>
+                  <span className="shrink-0 text-xs text-muted">
+                    {formatDate(entry.created_at, locale)}
+                  </span>
+                </div>
+
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
+                  <span
+                    className={
+                      entry.status === "succeeded" ? "text-accent" : "text-warning"
+                    }
+                  >
+                    {entry.status}
+                  </span>
+                  {entry.row_count !== null ? (
+                    <span>{t("rowsShort", { n: formatNumber(entry.row_count, locale) })}</span>
+                  ) : null}
+                  {entry.duration_ms !== null ? (
+                    <span>{formatNumber(entry.duration_ms, locale)} ms</span>
+                  ) : null}
+                </div>
+
+                {entry.explanation?.[key] ? (
+                  <p className="mt-1 text-xs text-muted">{entry.explanation[key]}</p>
+                ) : null}
+                {entry.error ? (
+                  <p className="mt-1 text-xs text-warning">{entry.error}</p>
+                ) : null}
+                {entry.sql ? (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-xs text-muted">SQL</summary>
+                    <pre className="identifier mt-1 overflow-x-auto text-[11px]">
+                      {entry.sql}
+                    </pre>
+                  </details>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
     </section>
   );

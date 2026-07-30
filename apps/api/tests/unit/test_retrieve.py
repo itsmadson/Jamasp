@@ -1,6 +1,6 @@
 import pytest
 
-from agah.query.retrieve import lexical_scores, select_tables
+from jamasp.query.retrieve import lexical_scores, select_tables
 
 KNOWLEDGE = {
     "schema_version": "1.0",

@@ -2,9 +2,9 @@ from dataclasses import replace
 
 import pytest
 
-from agah.models.entity import EntityStatus
-from agah.pipeline.diff import diff_snapshots, status_for
-from agah.pipeline.snapshot import ColumnInfo, EntitySnapshot, StructuralSnapshot
+from jamasp.models.entity import EntityStatus
+from jamasp.pipeline.diff import diff_snapshots, status_for
+from jamasp.pipeline.snapshot import ColumnInfo, EntitySnapshot, StructuralSnapshot
 
 
 def _column(name, data_type="integer", ordinal=0, nullable=True, is_pk=False):

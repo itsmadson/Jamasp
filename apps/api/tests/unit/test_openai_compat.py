@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from agah.llm.openai_compat import OpenAICompatProvider, ProviderResponseError
+from jamasp.llm.openai_compat import OpenAICompatProvider, ProviderResponseError
 
 
 def _provider(handler) -> OpenAICompatProvider:

@@ -19,6 +19,17 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
+@pytest.fixture(autouse=True)
+def _isolate_settings():
+    """Settings are lru_cached, so one test's environment would otherwise leak
+    into the next one through a stale Settings object."""
+    from jamasp.config import get_settings
+
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
 @pytest.fixture(scope="session")
 def metadata_dsn() -> Iterator[str]:
     """A pgvector-capable Postgres with the full schema migrated in."""
@@ -27,7 +38,7 @@ def metadata_dsn() -> Iterator[str]:
         result = subprocess.run(
             ["alembic", "upgrade", "head"],
             cwd=API_ROOT,
-            env={**os.environ, "AGAH_DATABASE_URL": sync_dsn},
+            env={**os.environ, "JAMASP_DATABASE_URL": sync_dsn},
             capture_output=True,
             text=True,
             check=False,
@@ -55,7 +66,7 @@ def hr_dsn() -> Iterator[str]:
 
 @pytest_asyncio.fixture(scope="session")
 async def hr_snapshot(hr_dsn: str):
-    from agah.adapters.postgres import PostgresAdapter
+    from jamasp.adapters.postgres import PostgresAdapter
 
     return await PostgresAdapter(hr_dsn).introspect()
 
@@ -76,18 +87,18 @@ async def employees_entity(hr_snapshot):
 
 @pytest_asyncio.fixture
 async def leave_profile(hr_dsn, leave_entity):
-    from agah.adapters.postgres import PostgresAdapter
-    from agah.models.source import SamplingPolicy
-    from agah.pipeline.profile import profile_entity
+    from jamasp.adapters.postgres import PostgresAdapter
+    from jamasp.models.source import SamplingPolicy
+    from jamasp.pipeline.profile import profile_entity
 
     return await profile_entity(PostgresAdapter(hr_dsn), leave_entity, SamplingPolicy.MASKED)
 
 
 @pytest_asyncio.fixture
 async def employees_profile(hr_dsn, employees_entity):
-    from agah.adapters.postgres import PostgresAdapter
-    from agah.models.source import SamplingPolicy
-    from agah.pipeline.profile import profile_entity
+    from jamasp.adapters.postgres import PostgresAdapter
+    from jamasp.models.source import SamplingPolicy
+    from jamasp.pipeline.profile import profile_entity
 
     return await profile_entity(PostgresAdapter(hr_dsn), employees_entity, SamplingPolicy.MASKED)
 
@@ -162,14 +173,14 @@ async def client(session, monkeypatch, fake_queue):
     """App wired to the rolled-back test session, so HTTP tests stay isolated."""
     from httpx import ASGITransport, AsyncClient
 
-    from agah.config import get_settings
-    from agah.db import get_session
-    from agah.main import create_app
-    from agah.queue import get_queue
-    from agah.routers.scans import get_progress_source
+    from jamasp.config import get_settings
+    from jamasp.db import get_session
+    from jamasp.main import create_app
+    from jamasp.queue import get_queue
+    from jamasp.routers.scans import get_progress_source
 
-    monkeypatch.setenv("AGAH_JWT_SECRET", "test-jwt-secret")
-    monkeypatch.setenv("AGAH_SECRET_KEY", base64.urlsafe_b64encode(b"0" * 32).decode())
+    monkeypatch.setenv("JAMASP_JWT_SECRET", "test-jwt-secret")
+    monkeypatch.setenv("JAMASP_SECRET_KEY", base64.urlsafe_b64encode(b"0" * 32).decode())
     get_settings.cache_clear()
 
     app = create_app()
@@ -183,8 +194,8 @@ async def client(session, monkeypatch, fake_queue):
 
 
 async def _make_user(session, email: str, role) -> object:
-    from agah.models.user import User
-    from agah.security.password import hash_password
+    from jamasp.models.user import User
+    from jamasp.security.password import hash_password
 
     user = User(email=email, password_hash=hash_password("correct-horse"), role=role)
     session.add(user)
@@ -194,16 +205,16 @@ async def _make_user(session, email: str, role) -> object:
 
 @pytest_asyncio.fixture
 async def admin_user(session):
-    from agah.models.user import UserRole
+    from jamasp.models.user import UserRole
 
-    return await _make_user(session, "admin@agah.local", UserRole.ADMIN)
+    return await _make_user(session, "admin@jamasp.local", UserRole.ADMIN)
 
 
 @pytest_asyncio.fixture
 async def analyst_user(session):
-    from agah.models.user import UserRole
+    from jamasp.models.user import UserRole
 
-    return await _make_user(session, "analyst@agah.local", UserRole.ANALYST)
+    return await _make_user(session, "analyst@jamasp.local", UserRole.ANALYST)
 
 
 async def _cookie_for(client, user) -> dict[str, str]:
@@ -211,7 +222,7 @@ async def _cookie_for(client, user) -> dict[str, str]:
         "/api/auth/login", json={"email": user.email, "password": "correct-horse"}
     )
     response.raise_for_status()
-    return {"agah_session": response.cookies["agah_session"]}
+    return {"jamasp_session": response.cookies["jamasp_session"]}
 
 
 @pytest_asyncio.fixture
@@ -222,14 +233,21 @@ async def admin_cookie(client, admin_user):
 @pytest_asyncio.fixture
 async def scanned_source(session, hr_dsn, monkeypatch):
     """A source that has completed one scan, with every entity described and pending."""
-    from agah.llm.base import Completion
-    from agah.models.scan import Scan
-    from agah.models.source import DataSource, SamplingPolicy, SourceKind
-    from agah.pipeline.orchestrator import run_scan
-    from agah.security.crypto import encrypt
+    from jamasp.llm.base import Completion
+    from jamasp.models.scan import Scan
+    from jamasp.models.source import DataSource, SamplingPolicy, SourceKind
+    from jamasp.pipeline.orchestrator import run_scan
+    from jamasp.security.crypto import encrypt
 
     key = b"0" * 32
-    monkeypatch.setattr("agah.pipeline.orchestrator.key_from_settings", lambda: key)
+    monkeypatch.setattr("jamasp.pipeline.orchestrator.key_from_settings", lambda: key)
+    # This fixture backs the end-to-end tests, which cover the inferred-relationship
+    # path through to the knowledge export. Inference is off by default because it
+    # is expensive on a remote database, so it is turned on explicitly here.
+    monkeypatch.setenv("JAMASP_INFER_RELATIONSHIPS", "true")
+    from jamasp.config import get_settings
+
+    get_settings.cache_clear()
 
     cassette = json.loads(
         (Path(__file__).parent / "fixtures/cassettes/describe_leave_requests.json").read_text()
@@ -244,8 +262,8 @@ async def scanned_source(session, hr_dsn, monkeypatch):
     async def fake_embed(session_, texts, scan_id=None):
         return [[0.0] * 1024 for _ in texts]
 
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
-    monkeypatch.setattr("agah.pipeline.embed.embed_texts", fake_embed)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.embed.embed_texts", fake_embed)
 
     source = DataSource(
         name="HR",
@@ -266,7 +284,7 @@ async def scanned_source(session, hr_dsn, monkeypatch):
 async def entity(session, scanned_source):
     from sqlalchemy import select
 
-    from agah.models.entity import Entity
+    from jamasp.models.entity import Entity
 
     return (
         await session.scalars(

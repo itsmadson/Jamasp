@@ -31,7 +31,7 @@ describe("LoginForm", () => {
     );
     const onSuccess = renderForm();
 
-    await userEvent.type(screen.getByLabelText(/email/i), "admin@agah.local");
+    await userEvent.type(screen.getByLabelText(/email/i), "admin@jamasp.local");
     await userEvent.type(screen.getByLabelText(/password/i), "correct-horse");
     await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -48,7 +48,7 @@ describe("LoginForm", () => {
     );
     renderForm();
 
-    await userEvent.type(screen.getByLabelText(/email/i), "admin@agah.local");
+    await userEvent.type(screen.getByLabelText(/email/i), "admin@jamasp.local");
     await userEvent.type(screen.getByLabelText(/password/i), "wrong");
     await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -87,7 +87,7 @@ describe("LoginForm", () => {
     );
     renderForm();
 
-    await userEvent.type(screen.getByLabelText(/email/i), "admin@agah.local");
+    await userEvent.type(screen.getByLabelText(/email/i), "admin@jamasp.local");
     await userEvent.type(screen.getByLabelText(/password/i), "correct-horse");
     const button = screen.getByRole("button", { name: /sign in/i });
     await userEvent.click(button);

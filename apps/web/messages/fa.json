@@ -1,18 +1,20 @@
 {
   "app": {
-    "name": "آگاه",
-    "tagline": "گزارش‌ساز هوشمند"
+    "name": "جاماسپ",
+    "tagline": "داده‌هایت را می‌شناسد"
   },
   "nav": {
     "sources": "منابع داده",
-    "settings": "تنظیمات"
+    "settings": "تنظیمات",
+    "dashboard": "میزکار",
+    "workspace": "کارگاه"
   },
   "common": {
     "save": "ذخیره",
     "cancel": "انصراف"
   },
   "auth": {
-    "title": "ورود به آگاه",
+    "title": "ورود به جاماسپ",
     "subtitle": "داده‌هایتان را وصل کنید، برداشت هوش مصنوعی را تایید کنید، سپس گزارش بخواهید.",
     "email": "ایمیل",
     "password": "گذرواژه",
@@ -45,7 +47,17 @@
     "loadFailed": "بارگذاری منابع داده انجام نشد.",
     "review": "بازبینی",
     "ask": "پرسش",
-    "reports": "گزارش‌ها"
+    "reports": "گزارش‌ها",
+    "startHere": "از اینجا شروع کنید",
+    "open": "بازکردن",
+    "step1": "۱ · اسکن ساختار",
+    "step2": "۲ · بازبینی برداشت هوش مصنوعی",
+    "step3": "۳ · درخواست گزارش",
+    "mustApprove": "گزارش‌ها فقط از جدول‌هایی استفاده می‌کنند که تایید کرده‌اید. اول اسکن، بعد بازبینی.",
+    "readOnlyTitle": "از کاربر فقط-خواندنی استفاده کنید",
+    "readOnlyBody": "جاماسپ فقط می‌خواند و جز SELECT چیزی اجرا نمی‌کند — اما محکم‌ترین تضمین، خودِ حسابی است که با آن وصل می‌شوید. یک کاربر فقط-خواندنی بسازید و از آن استفاده کنید.",
+    "readOnlySql": "CREATE USER jamasp_ro WITH PASSWORD '…';\nGRANT CONNECT ON DATABASE your_db TO jamasp_ro;\nGRANT USAGE ON SCHEMA public TO jamasp_ro;\nGRANT SELECT ON ALL TABLES IN SCHEMA public TO jamasp_ro;\nALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO jamasp_ro;\nALTER USER jamasp_ro SET default_transaction_read_only = on;",
+    "notYetSupported": "هنوز پشتیبانی نمی‌شود"
   },
   "scan": {
     "starting": "شروع اسکن…",
@@ -72,18 +84,19 @@
     "progress": "تاییدشده",
     "search": "جستجوی جدول‌ها",
     "entities": "جدول‌ها",
-    "status": "وضعیت",
+    "status": {
+      "pending": "در انتظار",
+      "stale": "تغییرکرده",
+      "approved": "تاییدشده",
+      "describe_failed": "ناموفق",
+      "ignored": "نادیده",
+      "archived": "بایگانی"
+    },
     "allStatuses": "همه وضعیت‌ها",
     "sort": "ترتیب",
     "sortName": "نام",
     "sortConfidence": "کم‌اطمینان‌ترین اول",
     "sortStatus": "وضعیت",
-    "status.pending": "در انتظار",
-    "status.stale": "تغییرکرده",
-    "status.approved": "تاییدشده",
-    "status.describe_failed": "ناموفق",
-    "status.ignored": "نادیده",
-    "status.archived": "بایگانی",
     "selectPrompt": "برای بازبینی، یک جدول انتخاب کنید.",
     "aiSuggested": "پیشنهاد هوش مصنوعی",
     "editSummary": "ویرایش توضیح",
@@ -148,10 +161,16 @@
     "noRows": "پرس‌وجو اجرا شد و هیچ سطری مطابقت نداشت.",
     "meta": "{rows} سطر در {ms} میلی‌ثانیه",
     "failed": "ارتباط با موتور پرس‌وجو برقرار نشد.",
-    "refusal.no_match": "هیچ جدول تاییدشده‌ای پاسخ این پرسش را ندارد",
-    "refusal.generation_failed": "مدل نتوانست پرس‌وجوی قابل استفاده بسازد",
-    "refusal.unsafe": "پرس‌وجوی تولیدشده رد شد",
-    "refusal.execution_failed": "اجرای پرس‌وجو ناموفق بود"
+    "refusal": {
+      "no_match": "هیچ جدول تاییدشده‌ای پاسخ این پرسش را ندارد",
+      "generation_failed": "مدل نتوانست پرس‌وجوی قابل استفاده بسازد",
+      "unsafe": "پرس‌وجوی تولیدشده رد شد",
+      "execution_failed": "اجرای پرس‌وجو ناموفق بود"
+    },
+    "history": "پرسش‌های پیشین",
+    "historyEmpty": "هنوز چیزی پرسیده نشده.",
+    "reuse": "دوباره بپرس",
+    "rowsShort": "{n} سطر"
   },
   "report": {
     "title": "گزارش‌ها",
@@ -169,6 +188,95 @@
     "chatPlaceholder": "نمودار را خطی کن",
     "chatSend": "اعمال",
     "chatApplying": "در حال اعمال…",
-    "chatRejected": "این تغییر اعمال نشد"
+    "chatRejected": "این تغییر اعمال نشد",
+    "exportPdf": "خروجی PDF",
+    "buildFailed": "گزارش ساخته نشد.",
+    "keepsRunning": "اگر صفحه را ببندید ادامه پیدا می‌کند — گزارش منتظرتان می‌ماند.",
+    "stage": {
+      "plan": "برنامه‌ریزی بخش‌ها",
+      "query": "نوشتن و اجرای SQL",
+      "design": "طراحی چیدمان"
+    },
+    "findings": "یافته‌های داده"
+  },
+  "dashboard": {
+    "title": "میزکار",
+    "subtitle": "چه چیزی متصل است، چه چیزی نیاز به رسیدگی دارد، و گام بعدی چیست.",
+    "failed": "بارگذاری نمای کلی ممکن نشد.",
+    "attention": "نیازمند رسیدگی",
+    "allSources": "همهٔ منابع",
+    "manage": "مدیریت منابع",
+    "recent": "فعالیت‌های اخیر",
+    "tables": "{n} جدول",
+    "approved": "{n} تاییدشده",
+    "awaiting": "{n} در انتظار بازبینی",
+    "lastScan": "پویش در {when}",
+    "firstRunTitle": "نخستین پایگاه داده را متصل کنید",
+    "firstRunBody": "جاماسپ ساختار داده‌ها را می‌خواند، هر جدول را به فارسی و انگلیسی توصیف می‌کند و سپس به پرسش‌های شما پاسخ می‌دهد.",
+    "firstRunAction": "افزودن منبع داده",
+    "stat": {
+      "sources": "منابع",
+      "tables": "جدول‌ها",
+      "pending": "در انتظار بازبینی",
+      "reports": "گزارش‌ها"
+    },
+    "step": {
+      "scan": "پویش",
+      "review": "بازبینی",
+      "ask": "پرسش"
+    },
+    "action": {
+      "scan": "اجرای پویش",
+      "scanning": "در حال پویش…",
+      "review": "بازبینی جدول‌ها",
+      "ask": "پرسیدن سوال",
+      "ready": "ورود به کارگاه"
+    },
+    "kind": {
+      "question": "پرسش",
+      "report": "گزارش"
+    }
+  },
+  "workspace": {
+    "source": "منبع",
+    "noSources": "ابتدا یک منبع داده اضافه کنید",
+    "askingAbout": "دربارهٔ {name}",
+    "question": "پرسش شما",
+    "send": "ارسال",
+    "history": "تاریخچه",
+    "historyEmpty": "هنوز چیزی پرسیده نشده.",
+    "reuse": "دوباره بپرس",
+    "rows": "{n} سطر",
+    "thinking": "در حال نوشتن SQL…",
+    "planning": "در حال برنامه‌ریزی گزارش…",
+    "failed": "خطایی رخ داد.",
+    "buildFailed": "گزارش ساخته نشد.",
+    "modeAnswer": "پاسخ",
+    "modeReport": "گزارش",
+    "modeAnswerHint": "یک پرسش، یک جدول نتیجه",
+    "modeReportHint": "چند پرسش، نمودار و یافته‌ها",
+    "placeholderAsk": "چند کاربر فعال در تهران داریم؟",
+    "placeholderReport": "گزارشی از رشد کاربران، به تفکیک استان و نقش",
+    "emptyTitle": "هرچه می‌خواهی از داده‌هایت بپرس",
+    "emptyBody": "جاماسپ پرس‌وجو را می‌نویسد، فقط-خواندنی اجرا می‌کند و آنچه انجام داده را نشان می‌دهد.",
+    "example1": "در هر جدول چند رکورد وجود دارد؟",
+    "example2": "ده مورد آخر را نشان بده",
+    "example3": "گزارشی از تفکیک کاربران بر اساس نقش",
+    "meta": "{rows} سطر در {ms} میلی‌ثانیه",
+    "filter": {
+      "all": "همه",
+      "question": "پرسش‌ها",
+      "report": "گزارش‌ها"
+    },
+    "kind": {
+      "question": "پرسش",
+      "report": "گزارش"
+    },
+    "refusal": {
+      "refused_unsafe": "این درخواست فقط-خواندنی نبود.",
+      "refused_unknown_table": "این پرسش به چیزی خارج از جدول‌های تاییدشده اشاره دارد.",
+      "refused_ambiguous": "پرسش می‌تواند بیش از یک معنا داشته باشد.",
+      "failed": "اجرای پرس‌وجو ممکن نشد."
+    }
   }
 }

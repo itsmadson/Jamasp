@@ -1,11 +1,11 @@
 /**
- * Hand-written mirrors of the FastAPI schemas in apps/api/agah/schemas/.
+ * Hand-written mirrors of the FastAPI schemas in apps/api/jamasp/schemas/.
  * Small and stable enough that a codegen step would cost more than it saves.
  */
 
 export type Bilingual = { fa: string; en: string };
 
-export type SourceKind = "postgres" | "mysql" | "mssql" | "oracle" | "rest" | "mcp";
+export type SourceKind = "postgres" | "mysql" | "mssql" | "rest";
 export type SourceStatus = "draft" | "scanning" | "ready" | "error";
 export type SamplingPolicy = "masked" | "schema_only";
 export type ScanStatus = "queued" | "running" | "succeeded" | "partial" | "failed";

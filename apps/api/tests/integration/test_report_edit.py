@@ -2,12 +2,15 @@ import json
 
 import pytest
 
-from agah.llm.base import Completion
-from agah.report.edit import EditRejected, edit_report_spec
+from jamasp.llm.base import Completion
+from jamasp.report.edit import EditRejected, edit_report_spec
 
 COLUMNS = [
     {"name": "status_label", "type": "text"},
     {"name": "request_count", "type": "number"},
+]
+DATASETS = [
+    {"key": "main", "question": "leave by status", "columns": COLUMNS, "row_count": 3}
 ]
 
 SPEC = {
@@ -39,10 +42,10 @@ async def test_applies_a_requested_block_type_change(session, monkeypatch):
             ],
         })
 
-    monkeypatch.setattr("agah.report.edit.call_task", fake_call)
+    monkeypatch.setattr("jamasp.report.edit.call_task", fake_call)
 
     updated = await edit_report_spec(
-        session, SPEC, COLUMNS, 3, "به جای نمودار، جدول نشان بده"
+        session, SPEC, DATASETS, "به جای نمودار، جدول نشان بده"
     )
     assert [block["type"] for block in updated["blocks"]] == ["table"]
 
@@ -58,9 +61,10 @@ async def test_keeps_the_title_the_user_did_not_mention(session, monkeypatch):
             ],
         })
 
-    monkeypatch.setattr("agah.report.edit.call_task", fake_call)
+    monkeypatch.setattr("jamasp.report.edit.call_task", fake_call)
 
-    updated = await edit_report_spec(session, SPEC, COLUMNS, 3, "make it a line")
+    updated = await edit_report_spec(
+        session, SPEC, DATASETS, "make it a line")
     assert updated["title"]["fa"] == "مرخصی به تفکیک وضعیت"
 
 
@@ -79,9 +83,10 @@ async def test_a_block_naming_a_missing_column_is_dropped_by_the_same_validator(
             ],
         })
 
-    monkeypatch.setattr("agah.report.edit.call_task", fake_call)
+    monkeypatch.setattr("jamasp.report.edit.call_task", fake_call)
 
-    updated = await edit_report_spec(session, SPEC, COLUMNS, 3, "add a chart")
+    updated = await edit_report_spec(
+        session, SPEC, DATASETS, "add a chart")
     assert len(updated["blocks"]) == 1
 
 
@@ -90,10 +95,11 @@ async def test_an_unusable_edit_leaves_the_report_alone(session, monkeypatch):
     async def fake_call(session_, task, messages, **kwargs):
         return _completion("not json at all")
 
-    monkeypatch.setattr("agah.report.edit.call_task", fake_call)
+    monkeypatch.setattr("jamasp.report.edit.call_task", fake_call)
 
     with pytest.raises(EditRejected):
-        await edit_report_spec(session, SPEC, COLUMNS, 3, "??")
+        await edit_report_spec(
+        session, SPEC, DATASETS, "??")
 
 
 @pytest.mark.asyncio
@@ -103,7 +109,7 @@ async def test_an_edit_that_would_empty_the_report_is_refused(session, monkeypat
         # where there is genuinely nothing left to show.
         return _completion({**SPEC, "blocks": []})
 
-    monkeypatch.setattr("agah.report.edit.call_task", fake_call)
+    monkeypatch.setattr("jamasp.report.edit.call_task", fake_call)
 
     # An edit that strips a working report down to nothing is refused, so the
     # caller keeps the layout it already had.

@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from agah.llm.base import Completion
-from agah.llm.prompts.describe_entity import build_describe_messages
-from agah.pipeline.describe import DescribeFailed, describe_entity
+from jamasp.llm.base import Completion
+from jamasp.llm.prompts.describe_entity import build_describe_messages
+from jamasp.pipeline.describe import DescribeFailed, describe_entity
 
 CASSETTE = json.loads(
     (Path(__file__).parent.parent / "fixtures/cassettes/describe_leave_requests.json").read_text()
@@ -23,7 +23,7 @@ async def test_produces_bilingual_description(session, monkeypatch, leave_entity
     async def fake_call(*args, **kwargs):
         return _completion(json.dumps(CASSETTE))
 
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
 
     result = await describe_entity(session, leave_entity, leave_profile, [], scan_id=None)
     assert result.summary["fa"] and result.summary["en"]
@@ -35,7 +35,7 @@ async def test_decodes_coded_status_column(session, monkeypatch, leave_entity, l
     async def fake_call(*args, **kwargs):
         return _completion(json.dumps(CASSETTE))
 
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
 
     result = await describe_entity(session, leave_entity, leave_profile, [], scan_id=None)
     status = next(field for field in result.fields if field["name"] == "status")
@@ -52,7 +52,7 @@ async def test_repairs_malformed_json_on_second_attempt(
     async def fake_call(*args, **kwargs):
         return responses.pop(0)
 
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
 
     result = await describe_entity(session, leave_entity, leave_profile, [], scan_id=None)
     assert result.summary["fa"]
@@ -64,7 +64,7 @@ async def test_raises_after_repair_also_fails(session, monkeypatch, leave_entity
     async def fake_call(*args, **kwargs):
         return _completion("still not json")
 
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
 
     with pytest.raises(DescribeFailed):
         await describe_entity(session, leave_entity, leave_profile, [], scan_id=None)

@@ -3,9 +3,9 @@ import json
 import pytest
 import pytest_asyncio
 
-from agah.adapters.postgres import PostgresAdapter
-from agah.llm.base import Completion
-from agah.query.pipeline import QueryFailed, answer_question
+from jamasp.adapters.postgres import PostgresAdapter
+from jamasp.llm.base import Completion
+from jamasp.query.pipeline import QueryFailed, answer_question
 
 KNOWLEDGE = {
     "schema_version": "1.0",
@@ -83,7 +83,7 @@ async def test_answers_a_persian_question_with_real_rows(session, adapter, monke
             "tables_used": ["leave_requests", "employees"],
         })
 
-    monkeypatch.setattr("agah.query.pipeline.call_task", fake_call)
+    monkeypatch.setattr("jamasp.query.pipeline.call_task", fake_call)
 
     result = await answer_question(
         session, adapter, KNOWLEDGE, "چه کسانی مرخصی تاییدشده دارند؟"
@@ -105,7 +105,7 @@ async def test_infers_column_types_for_downstream_charting(session, adapter, mon
             "tables_used": ["leave_requests"],
         })
 
-    monkeypatch.setattr("agah.query.pipeline.call_task", fake_call)
+    monkeypatch.setattr("jamasp.query.pipeline.call_task", fake_call)
 
     result = await answer_question(session, adapter, KNOWLEDGE, "تعداد مرخصی به تفکیک وضعیت")
     types = {column["name"]: column["type"] for column in result.columns}
@@ -121,7 +121,7 @@ async def test_refuses_sql_naming_a_table_nobody_approved(session, adapter, monk
             "tables_used": ["salaries_secret"],
         })
 
-    monkeypatch.setattr("agah.query.pipeline.call_task", fake_call)
+    monkeypatch.setattr("jamasp.query.pipeline.call_task", fake_call)
 
     with pytest.raises(QueryFailed) as caught:
         await answer_question(session, adapter, KNOWLEDGE, "مرخصی کارکنان را نشان بده")
@@ -137,7 +137,7 @@ async def test_never_executes_a_write(session, adapter, monkeypatch):
             "tables_used": ["leave_requests"],
         })
 
-    monkeypatch.setattr("agah.query.pipeline.call_task", fake_call)
+    monkeypatch.setattr("jamasp.query.pipeline.call_task", fake_call)
 
     with pytest.raises(QueryFailed) as caught:
         await answer_question(session, adapter, KNOWLEDGE, "مرخصی‌ها را پاک کن")
@@ -153,7 +153,7 @@ async def test_reports_no_match_instead_of_guessing(session, adapter, monkeypatc
     async def fake_call(session_, task, messages, **kwargs):
         raise AssertionError("the model must not be called when nothing matched")
 
-    monkeypatch.setattr("agah.query.pipeline.call_task", fake_call)
+    monkeypatch.setattr("jamasp.query.pipeline.call_task", fake_call)
 
     with pytest.raises(QueryFailed) as caught:
         await answer_question(session, adapter, KNOWLEDGE, "weather forecast for Tehran")
@@ -169,7 +169,7 @@ async def test_empty_result_is_success_not_failure(session, adapter, monkeypatch
             "tables_used": ["leave_requests"],
         })
 
-    monkeypatch.setattr("agah.query.pipeline.call_task", fake_call)
+    monkeypatch.setattr("jamasp.query.pipeline.call_task", fake_call)
 
     result = await answer_question(session, adapter, KNOWLEDGE, "مرخصی با وضعیت نامعتبر")
     # An empty answer is an answer.
@@ -191,7 +191,7 @@ async def test_repairs_malformed_json_once(session, adapter, monkeypatch):
     async def fake_call(session_, task, messages, **kwargs):
         return responses.pop(0)
 
-    monkeypatch.setattr("agah.query.pipeline.call_task", fake_call)
+    monkeypatch.setattr("jamasp.query.pipeline.call_task", fake_call)
 
     result = await answer_question(session, adapter, KNOWLEDGE, "چند مرخصی داریم؟")
     assert result.rows[0]["n"] == 4
@@ -199,7 +199,7 @@ async def test_repairs_malformed_json_once(session, adapter, monkeypatch):
 
 
 def test_prompt_carries_enum_codes_not_labels():
-    from agah.query.prompts.generate_sql import build_sql_messages
+    from jamasp.query.prompts.generate_sql import build_sql_messages
 
     messages = build_sql_messages(
         "approved leave", KNOWLEDGE["entities"], "postgres", "en"

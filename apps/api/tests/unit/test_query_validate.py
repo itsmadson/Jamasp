@@ -1,6 +1,6 @@
 import pytest
 
-from agah.query.validate import UnsafeQueryError, validate_sql
+from jamasp.query.validate import UnsafeQueryError, validate_sql
 
 APPROVED = {"leave_requests", "employees", "departments"}
 

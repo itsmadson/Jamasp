@@ -6,13 +6,13 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import select
 
-from agah.llm.base import Completion
-from agah.models.entity import Entity, EntityStatus, Field, PIIClass
-from agah.models.relationship import Relationship, RelationshipKind
-from agah.models.scan import Scan, ScanStatus
-from agah.models.source import DataSource, SamplingPolicy, SourceKind
-from agah.pipeline.orchestrator import run_scan
-from agah.security.crypto import encrypt
+from jamasp.llm.base import Completion
+from jamasp.models.entity import Entity, EntityStatus, Field, PIIClass
+from jamasp.models.relationship import Relationship, RelationshipKind
+from jamasp.models.scan import Scan, ScanStatus
+from jamasp.models.source import DataSource, SamplingPolicy, SourceKind
+from jamasp.pipeline.orchestrator import run_scan
+from jamasp.security.crypto import encrypt
 
 CASSETTE = json.loads(
     (Path(__file__).parent.parent / "fixtures/cassettes/describe_generic.json").read_text()
@@ -22,7 +22,7 @@ TEST_KEY = b"0" * 32
 
 @pytest_asyncio.fixture
 async def hr_source(session, hr_dsn, monkeypatch):
-    monkeypatch.setattr("agah.pipeline.orchestrator.key_from_settings", lambda: TEST_KEY)
+    monkeypatch.setattr("jamasp.pipeline.orchestrator.key_from_settings", lambda: TEST_KEY)
     source = DataSource(
         name="HR",
         kind=SourceKind.POSTGRES,
@@ -49,8 +49,8 @@ def stub_llm(monkeypatch):
     async def fake_embed(session, texts, scan_id=None):
         return [[0.0] * 1024 for _ in texts]
 
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
-    monkeypatch.setattr("agah.pipeline.embed.embed_texts", fake_embed)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.embed.embed_texts", fake_embed)
 
 
 @pytest.mark.asyncio
@@ -69,7 +69,25 @@ async def test_full_scan_creates_described_pending_entities(session, hr_source, 
 
 
 @pytest.mark.asyncio
-async def test_scan_persists_inferred_relationship(session, hr_source, stub_llm):
+async def test_relationship_inference_is_off_unless_asked_for(session, hr_source, stub_llm):
+    """It costs minutes on a remote database, so it is not the default."""
+    await run_scan(session, hr_source.pending_scan_id)
+    inferred = (
+        await session.scalars(
+            select(Relationship).where(Relationship.kind == RelationshipKind.INFERRED)
+        )
+    ).all()
+    assert inferred == []
+
+
+@pytest.mark.asyncio
+async def test_scan_persists_inferred_relationship_when_enabled(
+    session, hr_source, stub_llm, monkeypatch
+):
+    monkeypatch.setenv("JAMASP_INFER_RELATIONSHIPS", "true")
+    from jamasp.config import get_settings
+
+    get_settings.cache_clear()
     await run_scan(session, hr_source.pending_scan_id)
     inferred = (
         await session.scalars(
@@ -96,7 +114,7 @@ async def test_rescan_preserves_approved_entities(session, hr_source, stub_llm, 
 
     # Simulate drift: departments.name is retyped, nothing else changes. A retype
     # keeps the column queryable, so profiling still works against the real database.
-    from agah.adapters.postgres import PostgresAdapter
+    from jamasp.adapters.postgres import PostgresAdapter
 
     original = PostgresAdapter.introspect
 
@@ -137,7 +155,7 @@ async def test_rescan_preserves_approved_entities(session, hr_source, stub_llm, 
 
 @pytest.mark.asyncio
 async def test_describe_failure_isolates_to_one_entity(session, hr_source, stub_llm, monkeypatch):
-    from agah.pipeline.describe import DescribeFailed, EntityDescription
+    from jamasp.pipeline.describe import DescribeFailed, EntityDescription
 
     async def flaky(session_, entity, profile, neighbors, scan_id):
         if entity.name == "t_mst_01":
@@ -147,7 +165,7 @@ async def test_describe_failure_isolates_to_one_entity(session, hr_source, stub_
             common_questions=[], fields=[], confidence=0.9,
         )
 
-    monkeypatch.setattr("agah.pipeline.orchestrator.describe_entity", flaky)
+    monkeypatch.setattr("jamasp.pipeline.orchestrator.describe_entity", flaky)
 
     scan = await run_scan(session, hr_source.pending_scan_id)
 
@@ -182,8 +200,8 @@ async def test_embedding_failure_degrades_instead_of_discarding_the_scan(
     async def unreachable_embedder(session_, texts, scan_id=None):
         raise ConnectionError("All connection attempts failed")
 
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
-    monkeypatch.setattr("agah.pipeline.embed.embed_texts", unreachable_embedder)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.embed.embed_texts", unreachable_embedder)
 
     scan = await run_scan(session, hr_source.pending_scan_id)
 

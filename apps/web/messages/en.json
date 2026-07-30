@@ -1,18 +1,20 @@
 {
   "app": {
-    "name": "Agah",
-    "tagline": "AI report builder"
+    "name": "Jamasp",
+    "tagline": "knows your data"
   },
   "nav": {
     "sources": "Data sources",
-    "settings": "Settings"
+    "settings": "Settings",
+    "dashboard": "Dashboard",
+    "workspace": "Workspace"
   },
   "common": {
     "save": "Save",
     "cancel": "Cancel"
   },
   "auth": {
-    "title": "Sign in to Agah",
+    "title": "Sign in to Jamasp",
     "subtitle": "Connect your data, verify what the AI understood, then ask for reports.",
     "email": "Email",
     "password": "Password",
@@ -45,7 +47,17 @@
     "loadFailed": "Could not load data sources.",
     "review": "Review",
     "ask": "Ask",
-    "reports": "Reports"
+    "reports": "Reports",
+    "startHere": "Start here",
+    "open": "Open",
+    "step1": "1 · Scan the schema",
+    "step2": "2 · Review what the AI understood",
+    "step3": "3 · Ask for a report",
+    "mustApprove": "Reports only use tables you have approved. Scan, then review.",
+    "readOnlyTitle": "Use a read-only database user",
+    "readOnlyBody": "Jamasp only ever reads, and refuses to run anything but a SELECT — but the strongest guarantee is the account you connect with. Create a read-only user and use that.",
+    "readOnlySql": "CREATE USER jamasp_ro WITH PASSWORD '…';\nGRANT CONNECT ON DATABASE your_db TO jamasp_ro;\nGRANT USAGE ON SCHEMA public TO jamasp_ro;\nGRANT SELECT ON ALL TABLES IN SCHEMA public TO jamasp_ro;\nALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO jamasp_ro;\nALTER USER jamasp_ro SET default_transaction_read_only = on;",
+    "notYetSupported": "not yet supported"
   },
   "scan": {
     "starting": "Starting scan…",
@@ -72,18 +84,19 @@
     "progress": "Approved",
     "search": "Search tables",
     "entities": "Tables",
-    "status": "Status",
+    "status": {
+      "pending": "pending",
+      "stale": "changed",
+      "approved": "approved",
+      "describe_failed": "failed",
+      "ignored": "ignored",
+      "archived": "archived"
+    },
     "allStatuses": "All statuses",
     "sort": "Sort",
     "sortName": "Name",
     "sortConfidence": "Lowest confidence first",
     "sortStatus": "Status",
-    "status.pending": "pending",
-    "status.stale": "changed",
-    "status.approved": "approved",
-    "status.describe_failed": "failed",
-    "status.ignored": "ignored",
-    "status.archived": "archived",
     "selectPrompt": "Select a table to review it.",
     "aiSuggested": "AI suggested",
     "editSummary": "Edit summary",
@@ -148,10 +161,16 @@
     "noRows": "The query ran and matched no rows.",
     "meta": "{rows} rows in {ms} ms",
     "failed": "Could not reach the query engine.",
-    "refusal.no_match": "No approved table can answer this",
-    "refusal.generation_failed": "The model could not produce a usable query",
-    "refusal.unsafe": "The generated query was refused",
-    "refusal.execution_failed": "The query failed to run"
+    "refusal": {
+      "no_match": "No approved table can answer this",
+      "generation_failed": "The model could not produce a usable query",
+      "unsafe": "The generated query was refused",
+      "execution_failed": "The query failed to run"
+    },
+    "history": "Previous questions",
+    "historyEmpty": "Nothing asked yet.",
+    "reuse": "Ask again",
+    "rowsShort": "{n} rows"
   },
   "report": {
     "title": "Reports",
@@ -169,6 +188,95 @@
     "chatPlaceholder": "Make it a line chart",
     "chatSend": "Apply",
     "chatApplying": "Applying…",
-    "chatRejected": "That change was not applied"
+    "chatRejected": "That change was not applied",
+    "exportPdf": "Export PDF",
+    "buildFailed": "The report could not be built.",
+    "keepsRunning": "This keeps running if you leave the page — the report will be waiting.",
+    "stage": {
+      "plan": "Planning the panels",
+      "query": "Writing and running SQL",
+      "design": "Designing the layout"
+    },
+    "findings": "What the data says"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "What is connected, what needs your attention, and what to do next.",
+    "failed": "Could not load the overview.",
+    "attention": "Needs your attention",
+    "allSources": "All sources",
+    "manage": "Manage sources",
+    "recent": "Recent activity",
+    "tables": "{n} tables",
+    "approved": "{n} approved",
+    "awaiting": "{n} awaiting review",
+    "lastScan": "scanned {when}",
+    "firstRunTitle": "Connect your first database",
+    "firstRunBody": "Jamasp reads your schema, describes every table in Persian and English, and then answers questions about it.",
+    "firstRunAction": "Add a data source",
+    "stat": {
+      "sources": "Sources",
+      "tables": "Tables",
+      "pending": "Awaiting review",
+      "reports": "Reports"
+    },
+    "step": {
+      "scan": "Scan",
+      "review": "Review",
+      "ask": "Ask"
+    },
+    "action": {
+      "scan": "Run a scan",
+      "scanning": "Scanning…",
+      "review": "Review tables",
+      "ask": "Ask a question",
+      "ready": "Open workspace"
+    },
+    "kind": {
+      "question": "question",
+      "report": "report"
+    }
+  },
+  "workspace": {
+    "source": "Source",
+    "noSources": "Add a data source first",
+    "askingAbout": "asking about {name}",
+    "question": "Your question",
+    "send": "Send",
+    "history": "History",
+    "historyEmpty": "Nothing asked yet.",
+    "reuse": "Ask again",
+    "rows": "{n} rows",
+    "thinking": "Writing SQL…",
+    "planning": "Planning the report…",
+    "failed": "Something went wrong.",
+    "buildFailed": "The report could not be built.",
+    "modeAnswer": "Answer",
+    "modeReport": "Report",
+    "modeAnswerHint": "one question, one table of results",
+    "modeReportHint": "several questions, charts and findings",
+    "placeholderAsk": "How many active users are there in Tehran?",
+    "placeholderReport": "A report on user growth, by province and by role",
+    "emptyTitle": "Ask anything about your data",
+    "emptyBody": "Jamasp writes the SQL, runs it read-only, and shows you what it did.",
+    "example1": "How many records are in each table?",
+    "example2": "Show the ten most recent entries",
+    "example3": "A report breaking down users by role",
+    "meta": "{rows} rows in {ms} ms",
+    "filter": {
+      "all": "All",
+      "question": "Questions",
+      "report": "Reports"
+    },
+    "kind": {
+      "question": "question",
+      "report": "report"
+    },
+    "refusal": {
+      "refused_unsafe": "That would not have been a read-only query.",
+      "refused_unknown_table": "That asks about something not in the approved tables.",
+      "refused_ambiguous": "The question could mean more than one thing.",
+      "failed": "The query could not be run."
+    }
   }
 }

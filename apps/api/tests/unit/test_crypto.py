@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from agah.security.crypto import decrypt, encrypt
+from jamasp.security.crypto import decrypt, encrypt
 
 
 def test_roundtrip_recovers_plaintext():

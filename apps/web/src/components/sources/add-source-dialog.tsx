@@ -14,7 +14,11 @@ import {
 } from "@/lib/api/sources";
 import type { SamplingPolicy, SourceKind, SourceOut } from "@/lib/api/types";
 
-const KINDS: SourceKind[] = ["postgres", "mysql", "mssql", "oracle", "rest", "mcp"];
+// Only kinds with an adapter behind them. Offering a kind that raises
+// NotImplementedError the moment a scan starts is a promise the product cannot
+// keep — the picker says what actually works.
+const KINDS: SourceKind[] = ["postgres", "mysql", "mssql"];
+const PLANNED: SourceKind[] = ["rest"];
 
 interface AddSourceDialogProps {
   open: boolean;
@@ -95,6 +99,18 @@ export function AddSourceDialog({ open, onClose, onCreated }: AddSourceDialogPro
       }
     >
       <div className="flex flex-col gap-4">
+        {/* The read-only role is the one safety layer outside this application's
+            control, so the dialog asks for it rather than assuming it. */}
+        <details className="rounded-md border border-accent/30 bg-accent/[0.06] px-3 py-2">
+          <summary className="cursor-pointer text-sm font-medium text-accent">
+            {t("readOnlyTitle")}
+          </summary>
+          <p className="mt-2 text-xs text-muted">{t("readOnlyBody")}</p>
+          <pre className="identifier mt-2 overflow-x-auto rounded bg-background p-2 text-[11px] leading-relaxed">
+            {t("readOnlySql")}
+          </pre>
+        </details>
+
         <TextField
           label={t("name")}
           value={name}
@@ -117,6 +133,11 @@ export function AddSourceDialog({ open, onClose, onCreated }: AddSourceDialogPro
             {KINDS.map((value) => (
               <option key={value} value={value}>
                 {value}
+              </option>
+            ))}
+            {PLANNED.map((value) => (
+              <option key={value} value={value} disabled>
+                {value} — {t("notYetSupported")}
               </option>
             ))}
           </select>

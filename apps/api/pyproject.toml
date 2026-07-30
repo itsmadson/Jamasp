@@ -1,5 +1,5 @@
 [project]
-name = "agah-api"
+name = "jamasp-api"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -18,10 +18,13 @@ dependencies = [
     "pyjwt>=2.10",
     "cryptography>=43.0",
     "httpx>=0.27",
+    "asyncmy>=0.2.11",
+    "aioodbc>=0.5.0",
 ]
 
 [dependency-groups]
 dev = [
+    "pymysql>=1.2.0",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "ruff>=0.7",
@@ -40,7 +43,7 @@ line-length = 100
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Security"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["agah"]
+packages = ["jamasp"]
 
 [build-system]
 requires = ["hatchling"]

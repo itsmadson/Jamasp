@@ -1,8 +1,8 @@
-# آگاه — S2: Natural-language Query Engine
+# جاماسپ — S2: Natural-language Query Engine
 
 **Date:** 2026-07-29
 **Status:** Design
-**Depends on:** S1 (`docs/superpowers/specs/2026-07-28-agah-s1-semantic-layer-design.md`)
+**Depends on:** S1 (`docs/superpowers/specs/2026-07-28-jamasp-s1-semantic-layer-design.md`)
 
 ## 1. What this builds
 

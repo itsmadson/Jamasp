@@ -54,39 +54,42 @@ export function SourceList({ locale }: { locale: string }) {
           {t("empty")}
         </p>
       ) : (
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border text-start text-xs uppercase tracking-wide text-muted">
-              <th className="px-3 py-2 text-start font-medium">{t("name")}</th>
-              <th className="px-3 py-2 text-start font-medium">{t("kind")}</th>
-              <th className="px-3 py-2 text-start font-medium">{t("status")}</th>
-              <th className="px-3 py-2 text-start font-medium">{t("lastScan")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sources.map((source) => (
-              <tr key={source.id} className="border-b border-border/60 hover:bg-foreground/[0.03]">
-                <td className="px-3 py-3">
-                  <Link
-                    href={`/${locale}/sources/${source.id}`}
-                    className="font-medium hover:text-accent"
-                  >
-                    {source.name}
-                  </Link>
-                </td>
-                <td className="px-3 py-3 text-muted">
-                  <span className="identifier">{source.kind}</span>
-                </td>
-                <td className="px-3 py-3">
+        <ul className="flex flex-col gap-2">
+          {sources.map((source) => (
+            <li key={source.id}>
+              {/* The whole card is the target. A four-character name was the only
+                  way forward before, which is not a control anyone can find. */}
+              <Link
+                href={`/${locale}/sources/${source.id}`}
+                className="flex items-center justify-between gap-4 rounded-lg border border-border bg-surface px-4 py-3.5 transition-colors hover:border-accent"
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="text-base font-medium">{source.name}</span>
+                  <span className="flex items-center gap-2 text-xs text-muted">
+                    <span className="identifier">{source.kind}</span>
+                    <span>·</span>
+                    <span>
+                      {t("lastScan")}:{" "}
+                      {source.last_scan_at
+                        ? formatDate(source.last_scan_at, locale)
+                        : t("never")}
+                    </span>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
                   <StatusBadge status={source.status} />
-                </td>
-                <td className="px-3 py-3 text-muted">
-                  {source.last_scan_at ? formatDate(source.last_scan_at, locale) : t("never")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <span className="text-sm font-medium text-accent">
+                    {source.status === "draft" ? t("startHere") : t("open")}
+                  </span>
+                  <span aria-hidden="true" className="text-muted rtl:rotate-180">
+                    →
+                  </span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
 
       <AddSourceDialog

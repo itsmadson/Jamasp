@@ -70,7 +70,7 @@ async def test_unknown_task_name_rejected(client, admin_cookie):
 async def test_stored_api_key_is_encrypted_at_rest(client, admin_cookie, session):
     from sqlalchemy import select
 
-    from agah.models.observability import Setting
+    from jamasp.models.observability import Setting
 
     await client.put(
         "/api/settings/llm/providers", cookies=admin_cookie,

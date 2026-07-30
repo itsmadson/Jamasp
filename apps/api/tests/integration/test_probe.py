@@ -1,7 +1,7 @@
 import pytest
 
-from agah.adapters.postgres import PostgresAdapter
-from agah.pipeline.probe import probe_relationships
+from jamasp.adapters.postgres import PostgresAdapter
+from jamasp.pipeline.probe import probe_relationships
 
 
 @pytest.mark.asyncio

@@ -95,3 +95,46 @@
   unicode-bidi: isolate;
   display: inline-block;
 }
+
+/* Print, which is also how a report becomes a PDF. The browser already has the
+   Persian fonts and already shapes RTL text correctly, so exporting is a
+   stylesheet rather than a headless Chromium in the API image.
+
+   Charts are CSS and SVG, so they print as vectors. Colours are forced to their
+   light values: a dark surface would otherwise flood the page with ink. */
+@media print {
+  :root {
+    --background: #ffffff;
+    --foreground: #1a1a19;
+    --muted: #57564f;
+    --border: #d5d4d0;
+    --surface: #ffffff;
+    --grid: #e3e2df;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #4a3aa7;
+    --series-5: #e34948;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  /* Site furniture is not part of the report. */
+  header nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* A block split across a page break is unreadable; keep each one whole. */
+  figure,
+  table,
+  section {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}

@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy import select
 
-from agah.llm.base import Completion
-from agah.llm.router import RouteExhaustedError, call_task
-from agah.models.observability import LLMCall
+from jamasp.llm.base import Completion
+from jamasp.llm.router import RouteExhaustedError, call_task
+from jamasp.models.observability import LLMCall
 
 
 class FailingProvider:
@@ -23,7 +23,7 @@ async def test_exhausted_chain_reports_every_provider_not_just_the_last(session,
         "gapgpt": "model_not_found",
     }
     monkeypatch.setattr(
-        "agah.llm.router.build_provider",
+        "jamasp.llm.router.build_provider",
         lambda name, config: FailingProvider(name, messages.get(name, "unavailable")),
     )
 
@@ -42,7 +42,7 @@ async def test_exhausted_chain_reports_every_provider_not_just_the_last(session,
 @pytest.mark.asyncio
 async def test_each_failed_attempt_is_recorded_for_cost_and_diagnosis(session, monkeypatch):
     monkeypatch.setattr(
-        "agah.llm.router.build_provider", lambda name, config: FailingProvider(name, "boom")
+        "jamasp.llm.router.build_provider", lambda name, config: FailingProvider(name, "boom")
     )
 
     with pytest.raises(RouteExhaustedError):
@@ -73,7 +73,7 @@ async def test_a_successful_fallback_still_records_the_failure_before_it(session
                 model=model, provider=self.name, latency_ms=1,
             )
 
-    monkeypatch.setattr("agah.llm.router.build_provider", lambda name, config: Flaky(name))
+    monkeypatch.setattr("jamasp.llm.router.build_provider", lambda name, config: Flaky(name))
 
     result = await call_task(
         session, "describe_entity", [{"role": "user", "content": "hi"}],

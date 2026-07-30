@@ -7,7 +7,7 @@ import { routing } from "./i18n/routing";
 // Next 16 renamed the `middleware` file convention to `proxy`; the exported
 // function must be named `proxy` (or be the default export).
 
-const SESSION_COOKIE = "agah_session";
+const SESSION_COOKIE = "jamasp_session";
 const PUBLIC_SEGMENTS = ["login"];
 
 const handleI18nRouting = createMiddleware(routing);

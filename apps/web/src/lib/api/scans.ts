@@ -1,7 +1,8 @@
 import { apiFetch } from "./client";
 import type { ScanOut } from "./types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Empty means same-origin: requests go to /api/... and Next proxies them.
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export type ScanStage =
   | "introspect"

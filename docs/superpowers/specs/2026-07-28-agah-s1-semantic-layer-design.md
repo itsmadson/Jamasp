@@ -1,14 +1,14 @@
-# آگاه — S1: Connector & Semantic Layer (+ minimal platform shell)
+# جاماسپ — S1: Connector & Semantic Layer (+ minimal platform shell)
 
 **Date:** 2026-07-28
 **Status:** Design, awaiting approval
-**Scope:** Subsystem S1 of the آگاه platform, plus the thinnest slice of the platform shell (S5) needed to run it.
+**Scope:** Subsystem S1 of the جاماسپ platform, plus the thinnest slice of the platform shell (S5) needed to run it.
 
 ---
 
 ## 1. Product context
 
-آگاه ("one who knows") is a report builder. A user asks a question in Persian or English —
+جاماسپ ("one who knows") is a report builder. A user asks a question in Persian or English —
 *«افرادی که این ماه مرخصی گرفتند ولی تایم اداری بودند»*, *«گران‌ترین اجناس به تفکیک دسته‌بندی»* — and
 the system queries connected data sources and renders an interactive report page with charts.
 
@@ -103,7 +103,7 @@ diff when the schema changes.
 **Repository layout** (monorepo, pnpm workspace + uv):
 
 ```
-agah/
+jamasp/
   apps/
     web/          Next.js 15
     api/          FastAPI
@@ -131,7 +131,7 @@ approved knowledge (relevant from S2 onward).
 `mcp`), `config_encrypted` (bytea), `sampling_policy` (`masked` | `schema_only`), `status`
 (`draft` | `scanning` | `ready` | `error`), `created_by`, `created_at`, `last_scan_at`.
 
-Credentials are encrypted at rest with AES-GCM, key from `AGAH_SECRET_KEY` (env). Credentials
+Credentials are encrypted at rest with AES-GCM, key from `JAMASP_SECRET_KEY` (env). Credentials
 are never returned by any API response — write-only fields, redacted on read.
 
 **`scans`** — `id`, `data_source_id`, `status` (`queued` | `running` | `succeeded` | `partial` |

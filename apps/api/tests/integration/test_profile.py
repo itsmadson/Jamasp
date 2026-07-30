@@ -1,10 +1,10 @@
 import pytest
 import pytest_asyncio
 
-from agah.adapters.postgres import PostgresAdapter
-from agah.models.entity import PIIClass
-from agah.models.source import SamplingPolicy
-from agah.pipeline.profile import profile_entity
+from jamasp.adapters.postgres import PostgresAdapter
+from jamasp.models.entity import PIIClass
+from jamasp.models.source import SamplingPolicy
+from jamasp.pipeline.profile import profile_entity
 
 
 @pytest_asyncio.fixture

@@ -1,6 +1,6 @@
 import pytest
 
-from agah.safety.readonly import UnsafeQueryError, apply_limit, assert_readonly
+from jamasp.safety.readonly import UnsafeQueryError, apply_limit, assert_readonly
 
 SAFE = [
     "SELECT * FROM employees",

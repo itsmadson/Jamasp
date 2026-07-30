@@ -18,10 +18,12 @@ export function ReportChat({
   reportId,
   locale,
   onUpdated,
+  className = "",
 }: {
   reportId: string;
   locale: string;
   onUpdated: (report: Report) => void;
+  className?: string;
 }) {
   const t = useTranslations("report");
   const [instruction, setInstruction] = useState("");
@@ -57,7 +59,7 @@ export function ReportChat({
   }
 
   return (
-    <aside className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+    <aside className={`flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 ${className}`}>
       <h2 className="text-sm font-medium">{t("chatTitle")}</h2>
 
       {turns.length > 0 ? (

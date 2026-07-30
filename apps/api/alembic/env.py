@@ -3,9 +3,9 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
-from agah.config import get_settings
-from agah.models import Base
 from alembic import context
+from jamasp.config import get_settings
+from jamasp.models import Base
 
 config = context.config
 if config.config_file_name is not None:
@@ -16,7 +16,7 @@ target_metadata = Base.metadata
 
 def _sync_url() -> str:
     """Alembic runs synchronously; swap the async driver for psycopg."""
-    url = os.environ.get("AGAH_DATABASE_URL") or get_settings().database_url
+    url = os.environ.get("JAMASP_DATABASE_URL") or get_settings().database_url
     if "+asyncpg" in url:
         return url.replace("+asyncpg", "+psycopg")
     if url.startswith("postgresql://"):

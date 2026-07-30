@@ -59,3 +59,20 @@ export async function ask(
     throw error;
   }
 }
+
+export interface QueryHistoryEntry {
+  id: string;
+  question: string;
+  locale: string;
+  sql: string | null;
+  explanation: Bilingual | null;
+  status: string;
+  row_count: number | null;
+  duration_ms: number | null;
+  error: string | null;
+  created_at: string;
+}
+
+export function queryHistory(sourceId: string): Promise<QueryHistoryEntry[]> {
+  return apiFetch<QueryHistoryEntry[]>(`/api/sources/${sourceId}/queries`);
+}

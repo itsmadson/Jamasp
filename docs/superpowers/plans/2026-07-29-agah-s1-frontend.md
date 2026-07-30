@@ -1,4 +1,4 @@
-# آگاه S1 Frontend Implementation Plan
+# جاماسپ S1 Frontend Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,9 +8,9 @@
 
 **Tech Stack:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, next-intl, Vazirmatn (self-hosted), Vitest + React Testing Library, MSW, Playwright.
 
-**Spec:** `docs/superpowers/specs/2026-07-28-agah-s1-semantic-layer-design.md` (§6 review UI, §7.3 auth, §7.4 i18n)
+**Spec:** `docs/superpowers/specs/2026-07-28-jamasp-s1-semantic-layer-design.md` (§6 review UI, §7.3 auth, §7.4 i18n)
 
-**Backend:** complete and on branch `feat/s1-backend`. The API surface this plan consumes is fixed and already tested — see §9 of the spec for the export contract and `apps/api/agah/routers/` for the routes.
+**Backend:** complete and on branch `feat/s1-backend`. The API surface this plan consumes is fixed and already tested — see §9 of the spec for the export contract and `apps/api/jamasp/routers/` for the routes.
 
 ## Global Constraints
 
@@ -597,7 +597,7 @@ describe("LoginForm", () => {
     );
     const onSuccess = renderForm();
 
-    await userEvent.type(screen.getByLabelText(/email/i), "admin@agah.local");
+    await userEvent.type(screen.getByLabelText(/email/i), "admin@jamasp.local");
     await userEvent.type(screen.getByLabelText(/password/i), "correct-horse");
     await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -614,7 +614,7 @@ describe("LoginForm", () => {
     );
     renderForm();
 
-    await userEvent.type(screen.getByLabelText(/email/i), "admin@agah.local");
+    await userEvent.type(screen.getByLabelText(/email/i), "admin@jamasp.local");
     await userEvent.type(screen.getByLabelText(/password/i), "wrong");
     await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -638,7 +638,7 @@ describe("LoginForm", () => {
     );
     renderForm();
 
-    await userEvent.type(screen.getByLabelText(/email/i), "admin@agah.local");
+    await userEvent.type(screen.getByLabelText(/email/i), "admin@jamasp.local");
     await userEvent.type(screen.getByLabelText(/password/i), "correct-horse");
     const button = screen.getByRole("button", { name: /sign in/i });
     await userEvent.click(button);
@@ -1583,8 +1583,8 @@ import { expect, test } from "@playwright/test";
 test.describe("review flow", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/fa/login");
-    await page.getByLabel(/ایمیل|email/i).fill("admin@agah.local");
-    await page.getByLabel(/گذرواژه|password/i).fill(process.env.AGAH_ADMIN_PASSWORD!);
+    await page.getByLabel(/ایمیل|email/i).fill("admin@jamasp.local");
+    await page.getByLabel(/گذرواژه|password/i).fill(process.env.JAMASP_ADMIN_PASSWORD!);
     await page.getByRole("button", { name: /ورود|sign in/i }).click();
     await expect(page).toHaveURL(/\/fa\/sources/);
   });
@@ -1604,7 +1604,7 @@ test.describe("review flow", () => {
   test("registers a source, scans it, reviews and approves", async ({ page }) => {
     await page.getByRole("button", { name: /افزودن|add source/i }).click();
     await page.getByLabel(/نام|name/i).fill("HR");
-    await page.getByLabel(/اتصال|connection/i).fill(process.env.AGAH_FIXTURE_DSN!);
+    await page.getByLabel(/اتصال|connection/i).fill(process.env.JAMASP_FIXTURE_DSN!);
     await page.getByRole("button", { name: /آزمایش|test connection/i }).click();
     await expect(page.getByText(/PostgreSQL/)).toBeVisible();
     await page.getByRole("button", { name: /ذخیره|save/i }).click();
@@ -1642,11 +1642,11 @@ Expected: FAIL — no dev stack running, `/fa/login` unreachable
 
 - [ ] **Step 3: Write minimal implementation**
 
-`docker/compose.dev.yml` extends the existing stack with the API (`uvicorn agah.main:app`), the arq worker (`arq agah.pipeline.worker.WorkerSettings`), the web app, and the fixture database, wired so `NEXT_PUBLIC_API_URL` points at the API service.
+`docker/compose.dev.yml` extends the existing stack with the API (`uvicorn jamasp.main:app`), the arq worker (`arq jamasp.pipeline.worker.WorkerSettings`), the web app, and the fixture database, wired so `NEXT_PUBLIC_API_URL` points at the API service.
 
 `playwright.config.ts` sets `baseURL` to `http://localhost:3000`, `webServer` to bring up the dev stack, and one Chromium project.
 
-Add a `seed-admin` invocation to the compose entrypoint so `AGAH_ADMIN_PASSWORD` creates the first admin, and document the whole loop in `apps/web/README.md`: how to start the stack, where the fixture DSN comes from, and which env vars the e2e run needs.
+Add a `seed-admin` invocation to the compose entrypoint so `JAMASP_ADMIN_PASSWORD` creates the first admin, and document the whole loop in `apps/web/README.md`: how to start the stack, where the fixture DSN comes from, and which env vars the e2e run needs.
 
 - [ ] **Step 4: Run test to verify it passes**
 

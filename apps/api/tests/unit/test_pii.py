@@ -1,7 +1,7 @@
 import pytest
 
-from agah.models.entity import PIIClass
-from agah.safety.pii import classify_column, mask_value
+from jamasp.models.entity import PIIClass
+from jamasp.safety.pii import classify_column, mask_value
 
 
 @pytest.mark.parametrize(

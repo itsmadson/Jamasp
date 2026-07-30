@@ -1,4 +1,4 @@
-# آگاه
+# جاماسپ
 
 An AI report builder. Connect a database, verify what the AI understood about it,
 then ask for reports in Persian or English.
@@ -17,7 +17,7 @@ describing the change.
 | S5 | Platform shell | Built |
 
 **Not built:** adapters for MySQL, SQL Server, Oracle, REST and MCP. The
-`SourceAdapter` protocol in `apps/api/agah/adapters/base.py` defines the contract
+`SourceAdapter` protocol in `apps/api/jamasp/adapters/base.py` defines the contract
 each needs; only `postgres.py` implements it.
 
 Design and plans live in `docs/superpowers/`.
@@ -39,12 +39,12 @@ Fill in `apps/api/.env`. It is gitignored; never commit it.
 python -c "import base64,os;print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
 ```
 
-`AGAH_OPENROUTER_API_KEY` is the only LLM key required to run a scan.
+`JAMASP_OPENROUTER_API_KEY` is the only LLM key required to run a scan.
 
 ### 2. Start the whole stack
 
 ```bash
-AGAH_ADMIN_PASSWORD=choose-something docker compose -f docker/compose.dev.yml up --build
+JAMASP_ADMIN_PASSWORD=choose-something docker compose -f docker/compose.dev.yml up --build
 ```
 
 This starts Postgres (with pgvector), Redis, the API, the scan worker, the web app,
@@ -63,11 +63,11 @@ docker compose -f docker/compose.yml up -d
 cd apps/api
 uv sync
 uv run alembic upgrade head
-AGAH_ADMIN_EMAIL=admin@agah.local AGAH_ADMIN_PASSWORD=... uv run python -m agah.cli seed-admin
-uv run uvicorn agah.main:app --port 8000
+JAMASP_ADMIN_EMAIL=admin@jamasp.local JAMASP_ADMIN_PASSWORD=... uv run python -m jamasp.cli seed-admin
+uv run uvicorn jamasp.main:app --port 8000
 
 # scan worker (separate terminal)
-cd apps/api && uv run arq agah.pipeline.worker.WorkerSettings
+cd apps/api && uv run arq jamasp.pipeline.worker.WorkerSettings
 
 # web (separate terminal)
 cd apps/web && npm install && npm run dev

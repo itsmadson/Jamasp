@@ -62,13 +62,13 @@ export function SourceDetail({ locale, sourceId }: { locale: string; sourceId: s
             href={`/${locale}/sources/${sourceId}/review`}
             className="rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
           >
-            {sourcesT("review")}
+            {sourcesT("step2")}
           </Link>
           <Link
             href={`/${locale}/sources/${sourceId}/reports`}
             className="rounded-md border border-border px-3.5 py-2 text-sm font-medium hover:border-accent"
           >
-            {sourcesT("reports")}
+            {sourcesT("step3")}
           </Link>
           <Link
             href={`/${locale}/sources/${sourceId}/ask`}
@@ -77,10 +77,14 @@ export function SourceDetail({ locale, sourceId }: { locale: string; sourceId: s
             {sourcesT("ask")}
           </Link>
           <Button onClick={handleStart} disabled={starting} type="button">
-            {t("startScan")}
+            {sourcesT("step1")}
           </Button>
         </div>
       </div>
+
+      <p className="mb-5 rounded-md border border-border bg-surface px-4 py-3 text-sm text-muted">
+        {sourcesT("mustApprove")}
+      </p>
 
       {error ? (
         <p role="alert" className="mb-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">

@@ -1,8 +1,8 @@
-# آگاه — S3: Report Renderer
+# جاماسپ — S3: Report Renderer
 
 **Date:** 2026-07-29
 **Status:** Design
-**Depends on:** S2 (`docs/superpowers/specs/2026-07-29-agah-s2-query-engine-design.md`)
+**Depends on:** S2 (`docs/superpowers/specs/2026-07-29-jamasp-s2-query-engine-design.md`)
 
 ## 1. What this builds
 

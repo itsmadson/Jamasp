@@ -1,7 +1,7 @@
 import pytest
 
-from agah.adapters.postgres import PostgresAdapter
-from agah.safety.readonly import UnsafeQueryError
+from jamasp.adapters.postgres import PostgresAdapter
+from jamasp.safety.readonly import UnsafeQueryError
 
 
 @pytest.mark.asyncio

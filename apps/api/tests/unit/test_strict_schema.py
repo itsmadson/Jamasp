@@ -1,6 +1,6 @@
-from agah.llm.prompts.describe_entity import DESCRIBE_SCHEMA
-from agah.llm.schema import strict
-from agah.query.prompts.generate_sql import GENERATE_SQL_SCHEMA
+from jamasp.llm.prompts.describe_entity import DESCRIBE_SCHEMA
+from jamasp.llm.schema import strict
+from jamasp.query.prompts.generate_sql import GENERATE_SQL_SCHEMA
 
 
 def _walk(node):

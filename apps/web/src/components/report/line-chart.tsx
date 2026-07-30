@@ -20,11 +20,14 @@ export function LineChart({
   labels,
   values,
   locale,
+  area = false,
 }: {
   title: Bilingual;
   labels: string[];
   values: number[];
   locale: string;
+  /** Fills under the line, for when cumulative volume is the point. */
+  area?: boolean;
 }) {
   const key = locale as Locale;
   const caption = title[key] || title.en;
@@ -69,8 +72,8 @@ export function LineChart({
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--series-1)" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="var(--series-1)" stopOpacity="0" />
+              <stop offset="0%" stopColor="var(--series-1)" stopOpacity={area ? "0.45" : "0.18"} />
+              <stop offset="100%" stopColor="var(--series-1)" stopOpacity={area ? "0.05" : "0"} />
             </linearGradient>
           </defs>
 
@@ -105,12 +108,15 @@ export function LineChart({
 
           {values.map((value, index) => {
             const { x, y } = pointAt(index);
+            // Past a couple of dozen points a mark per value reads as noise, so the
+            // line carries the shape and only the hovered point is marked.
+            const marked = values.length <= 24 || hovered === index;
             return (
               <g key={index}>
                 <circle
                   cx={x}
                   cy={y}
-                  r={hovered === index ? 5 : 3.5}
+                  r={hovered === index ? 5 : marked ? 3.5 : 0}
                   fill="var(--series-1)"
                   stroke="var(--surface)"
                   strokeWidth="2"

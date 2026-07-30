@@ -1,14 +1,14 @@
-# آگاه S1 Backend Implementation Plan
+# جاماسپ S1 Backend Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the آگاه backend that registers a data source, introspects its schema deterministically, has an LLM describe it, lets a human approve the descriptions, and exports the approved semantic model as a stable JSON contract.
+**Goal:** Build the جاماسپ backend that registers a data source, introspects its schema deterministically, has an LLM describe it, lets a human approve the descriptions, and exports the approved semantic model as a stable JSON contract.
 
 **Architecture:** FastAPI service over a Postgres+pgvector metadata database. A five-stage scan pipeline (Introspect → Profile → Describe → Embed → Diff) runs as an arq background job. Stages 1, 2 and 5 are deterministic and contain no AI, which makes them testable against fixture databases. Stages 3 and 4 call an LLM through a provider abstraction with per-task model routing. Only human-approved entities appear in the export.
 
 **Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2.0 (async), Alembic, Pydantic v2, asyncpg, pgvector, arq + Redis, sqlglot, argon2-cffi, cryptography, httpx, pytest + pytest-asyncio, testcontainers, uv, ruff.
 
-**Spec:** `docs/superpowers/specs/2026-07-28-agah-s1-semantic-layer-design.md`
+**Spec:** `docs/superpowers/specs/2026-07-28-jamasp-s1-semantic-layer-design.md`
 
 **Scope note:** This plan covers the backend through the knowledge-export endpoint, using the **PostgreSQL adapter only**. It produces working, independently testable software: a complete scan-describe-approve-export cycle driven over HTTP. Two follow-up plans complete S1 — the remaining adapters (MySQL, SQL Server, Oracle, REST, MCP) behind the same `SourceAdapter` protocol, and the Next.js frontend.
 
@@ -34,7 +34,7 @@ apps/api/
   pyproject.toml
   alembic.ini
   alembic/versions/
-  agah/
+  jamasp/
     main.py                 FastAPI app factory, router registration
     config.py               pydantic-settings, env loading
     db.py                   async engine, session dependency
@@ -99,7 +99,7 @@ docker/
 ### Task 1: Project scaffold, config, and health endpoint
 
 **Files:**
-- Create: `apps/api/pyproject.toml`, `apps/api/agah/__init__.py`, `apps/api/agah/config.py`, `apps/api/agah/main.py`, `apps/api/tests/conftest.py`, `apps/api/tests/unit/test_health.py`, `docker/compose.yml`, `.env.example`
+- Create: `apps/api/pyproject.toml`, `apps/api/jamasp/__init__.py`, `apps/api/jamasp/config.py`, `apps/api/jamasp/main.py`, `apps/api/tests/conftest.py`, `apps/api/tests/unit/test_health.py`, `docker/compose.yml`, `.env.example`
 
 **Interfaces:**
 - Consumes: nothing
@@ -113,7 +113,7 @@ docker/
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from agah.main import create_app
+from jamasp.main import create_app
 
 
 @pytest.mark.asyncio
@@ -129,7 +129,7 @@ async def test_health_returns_ok():
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_health.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp'`
 
 - [ ] **Step 3: Write minimal implementation**
 
@@ -137,7 +137,7 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'agah'`
 
 ```toml
 [project]
-name = "agah-api"
+name = "jamasp-api"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -173,14 +173,14 @@ testpaths = ["tests"]
 line-length = 100
 
 [tool.hatch.build.targets.wheel]
-packages = ["agah"]
+packages = ["jamasp"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 ```
 
-`apps/api/agah/config.py`:
+`apps/api/jamasp/config.py`:
 
 ```python
 from functools import lru_cache
@@ -189,9 +189,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="AGAH_", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="JAMASP_", extra="ignore")
 
-    database_url: str = "postgresql+asyncpg://agah:agah@localhost:5432/agah"
+    database_url: str = "postgresql+asyncpg://jamasp:jamasp@localhost:5432/jamasp"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = ""
     jwt_secret: str = ""
@@ -203,14 +203,14 @@ def get_settings() -> Settings:
     return Settings()
 ```
 
-`apps/api/agah/main.py`:
+`apps/api/jamasp/main.py`:
 
 ```python
 from fastapi import FastAPI
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="آگاه API", version="0.1.0")
+    app = FastAPI(title="جاماسپ API", version="0.1.0")
 
     @app.get("/api/health")
     async def health() -> dict[str, str]:
@@ -236,11 +236,11 @@ def anyio_backend() -> str:
 `.env.example` (key names only, no values):
 
 ```bash
-AGAH_DATABASE_URL=postgresql+asyncpg://agah:agah@localhost:5432/agah
-AGAH_REDIS_URL=redis://localhost:6379/0
-AGAH_SECRET_KEY=
-AGAH_JWT_SECRET=
-AGAH_ENVIRONMENT=development
+JAMASP_DATABASE_URL=postgresql+asyncpg://jamasp:jamasp@localhost:5432/jamasp
+JAMASP_REDIS_URL=redis://localhost:6379/0
+JAMASP_SECRET_KEY=
+JAMASP_JWT_SECRET=
+JAMASP_ENVIRONMENT=development
 ```
 
 `docker/compose.yml`:
@@ -250,12 +250,12 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_USER: agah
-      POSTGRES_PASSWORD: agah
-      POSTGRES_DB: agah
+      POSTGRES_USER: jamasp
+      POSTGRES_PASSWORD: jamasp
+      POSTGRES_DB: jamasp
     ports: ["5432:5432"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agah"]
+      test: ["CMD-SHELL", "pg_isready -U jamasp"]
       interval: 5s
       retries: 10
 
@@ -291,7 +291,7 @@ git commit -m "feat: scaffold FastAPI service with health endpoint and compose s
 ### Task 2: Credential encryption
 
 **Files:**
-- Create: `apps/api/agah/security/__init__.py`, `apps/api/agah/security/crypto.py`, `apps/api/tests/unit/test_crypto.py`
+- Create: `apps/api/jamasp/security/__init__.py`, `apps/api/jamasp/security/crypto.py`, `apps/api/tests/unit/test_crypto.py`
 
 **Interfaces:**
 - Consumes: `get_settings()` from Task 1
@@ -308,7 +308,7 @@ import os
 
 import pytest
 
-from agah.security.crypto import decrypt, encrypt
+from jamasp.security.crypto import decrypt, encrypt
 
 
 def test_roundtrip_recovers_plaintext():
@@ -339,11 +339,11 @@ def test_tampered_ciphertext_raises():
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_crypto.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.security'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.security'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/security/crypto.py`:
+`apps/api/jamasp/security/crypto.py`:
 
 ```python
 import base64
@@ -352,7 +352,7 @@ import os
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from agah.config import get_settings
+from jamasp.config import get_settings
 
 NONCE_BYTES = 12
 
@@ -373,10 +373,10 @@ def decrypt(ciphertext: bytes, key: bytes) -> str:
 def key_from_settings() -> bytes:
     raw = get_settings().secret_key
     if not raw:
-        raise RuntimeError("AGAH_SECRET_KEY is not set; refusing to start")
+        raise RuntimeError("JAMASP_SECRET_KEY is not set; refusing to start")
     key = base64.urlsafe_b64decode(raw)
     if len(key) != 32:
-        raise RuntimeError("AGAH_SECRET_KEY must decode to 32 bytes")
+        raise RuntimeError("JAMASP_SECRET_KEY must decode to 32 bytes")
     return key
 ```
 
@@ -388,7 +388,7 @@ Expected: PASS — 4 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/security apps/api/tests/unit/test_crypto.py
+git add apps/api/jamasp/security apps/api/tests/unit/test_crypto.py
 git commit -m "feat: add AES-GCM credential encryption"
 ```
 
@@ -397,7 +397,7 @@ git commit -m "feat: add AES-GCM credential encryption"
 ### Task 3: Metadata models and migrations
 
 **Files:**
-- Create: `apps/api/agah/db.py`, `apps/api/agah/models/base.py`, `apps/api/agah/models/user.py`, `apps/api/agah/models/source.py`, `apps/api/agah/models/scan.py`, `apps/api/agah/models/entity.py`, `apps/api/agah/models/relationship.py`, `apps/api/agah/models/observability.py`, `apps/api/alembic.ini`, `apps/api/alembic/env.py`, `apps/api/alembic/versions/0001_initial.py`, `apps/api/tests/integration/test_models.py`
+- Create: `apps/api/jamasp/db.py`, `apps/api/jamasp/models/base.py`, `apps/api/jamasp/models/user.py`, `apps/api/jamasp/models/source.py`, `apps/api/jamasp/models/scan.py`, `apps/api/jamasp/models/entity.py`, `apps/api/jamasp/models/relationship.py`, `apps/api/jamasp/models/observability.py`, `apps/api/alembic.ini`, `apps/api/alembic/env.py`, `apps/api/alembic/versions/0001_initial.py`, `apps/api/tests/integration/test_models.py`
 - Modify: `apps/api/tests/conftest.py`
 
 **Interfaces:**
@@ -412,8 +412,8 @@ git commit -m "feat: add AES-GCM credential encryption"
 import pytest
 from sqlalchemy import select
 
-from agah.models.entity import Entity, EntityStatus
-from agah.models.source import DataSource, SamplingPolicy, SourceKind
+from jamasp.models.entity import Entity, EntityStatus
+from jamasp.models.source import DataSource, SamplingPolicy, SourceKind
 
 
 @pytest.mark.asyncio
@@ -450,11 +450,11 @@ async def test_entity_defaults_to_pending_and_cascades(session):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/integration/test_models.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.models'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.models'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/models/base.py`:
+`apps/api/jamasp/models/base.py`:
 
 ```python
 import uuid
@@ -481,7 +481,7 @@ class TimestampMixin:
     )
 ```
 
-`apps/api/agah/models/source.py`:
+`apps/api/jamasp/models/source.py`:
 
 ```python
 import enum
@@ -491,7 +491,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, Enum, ForeignKey, LargeBinary, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from agah.models.base import Base, TimestampMixin, UUIDMixin
+from jamasp.models.base import Base, TimestampMixin, UUIDMixin
 
 
 class SourceKind(enum.StrEnum):
@@ -536,7 +536,7 @@ class DataSource(Base, UUIDMixin, TimestampMixin):
     scans = relationship("Scan", back_populates="source", cascade="all, delete-orphan")
 ```
 
-`apps/api/agah/models/entity.py`:
+`apps/api/jamasp/models/entity.py`:
 
 ```python
 import enum
@@ -549,7 +549,7 @@ from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Uniqu
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from agah.models.base import Base, TimestampMixin, UUIDMixin
+from jamasp.models.base import Base, TimestampMixin, UUIDMixin
 
 EMBEDDING_DIM = 1024
 
@@ -629,14 +629,14 @@ class Field(Base, UUIDMixin, TimestampMixin):
 
 Write `user.py` (`User`: `email` unique, `password_hash`, `role: UserRole{ADMIN,ANALYST}`, `locale: str = "fa"`), `scan.py` (`Scan`: `data_source_id` FK cascade, `status: ScanStatus{QUEUED,RUNNING,SUCCEEDED,PARTIAL,FAILED}`, `started_at`, `finished_at`, `structural_snapshot: JSONB`, `stats: JSONB`, `error: JSONB`), `relationship.py` (`Relationship`: `data_source_id`, `from_entity_id`, `from_field`, `to_entity_id`, `to_field`, `kind: RelationshipKind{DECLARED,INFERRED}`, `cardinality`, `confidence`, `evidence: JSONB`, `status`) and `observability.py` (`LLMCall`: `scan_id` nullable FK, `purpose`, `provider`, `model`, `tokens_in`, `tokens_out`, `cost_usd`, `latency_ms`, `status`; `Setting`: `key` primary key `String(100)`, `value: JSONB`, `updated_by`, `updated_at`) following the same column and mixin conventions.
 
-`apps/api/agah/db.py`:
+`apps/api/jamasp/db.py`:
 
 ```python
 from collections.abc import AsyncIterator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from agah.config import get_settings
+from jamasp.config import get_settings
 
 _engine = create_async_engine(get_settings().database_url, pool_pre_ping=True)
 SessionLocal = async_sessionmaker(_engine, expire_on_commit=False)
@@ -647,7 +647,7 @@ async def get_session() -> AsyncIterator[AsyncSession]:
         yield session
 ```
 
-Initialize Alembic (`uv run alembic init alembic`), point `alembic/env.py` at `Base.metadata` and the `AGAH_DATABASE_URL` env var, then autogenerate `0001_initial`. Hand-edit that revision to add `op.execute("CREATE EXTENSION IF NOT EXISTS vector")` as its first upgrade statement.
+Initialize Alembic (`uv run alembic init alembic`), point `alembic/env.py` at `Base.metadata` and the `JAMASP_DATABASE_URL` env var, then autogenerate `0001_initial`. Hand-edit that revision to add `op.execute("CREATE EXTENSION IF NOT EXISTS vector")` as its first upgrade statement.
 
 Add to `apps/api/tests/conftest.py` a `session` fixture that spins up a Postgres testcontainer once per session, runs `alembic upgrade head` against it, and yields a rolled-back `AsyncSession` per test.
 
@@ -659,7 +659,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/models apps/api/agah/db.py apps/api/alembic apps/api/alembic.ini apps/api/tests
+git add apps/api/jamasp/models apps/api/jamasp/db.py apps/api/alembic apps/api/alembic.ini apps/api/tests
 git commit -m "feat: add metadata models and initial migration"
 ```
 
@@ -668,7 +668,7 @@ git commit -m "feat: add metadata models and initial migration"
 ### Task 4: Read-only SQL guard
 
 **Files:**
-- Create: `apps/api/agah/safety/__init__.py`, `apps/api/agah/safety/readonly.py`, `apps/api/tests/unit/test_readonly.py`
+- Create: `apps/api/jamasp/safety/__init__.py`, `apps/api/jamasp/safety/readonly.py`, `apps/api/tests/unit/test_readonly.py`
 
 **Interfaces:**
 - Consumes: nothing
@@ -683,7 +683,7 @@ Built early because Tasks 6 and 7 execute queries and must be guarded from their
 ```python
 import pytest
 
-from agah.safety.readonly import UnsafeQueryError, apply_limit, assert_readonly
+from jamasp.safety.readonly import UnsafeQueryError, apply_limit, assert_readonly
 
 SAFE = [
     "SELECT * FROM employees",
@@ -733,11 +733,11 @@ def test_apply_limit_tightens_existing_limit():
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_readonly.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.safety'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.safety'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/safety/readonly.py`:
+`apps/api/jamasp/safety/readonly.py`:
 
 ```python
 import sqlglot
@@ -791,7 +791,7 @@ Expected: PASS — 19 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/safety apps/api/tests/unit/test_readonly.py
+git add apps/api/jamasp/safety apps/api/tests/unit/test_readonly.py
 git commit -m "feat: add sqlglot-based read-only query guard"
 ```
 
@@ -800,7 +800,7 @@ git commit -m "feat: add sqlglot-based read-only query guard"
 ### Task 5: PII classification and masking
 
 **Files:**
-- Create: `apps/api/agah/safety/pii.py`, `apps/api/tests/unit/test_pii.py`
+- Create: `apps/api/jamasp/safety/pii.py`, `apps/api/tests/unit/test_pii.py`
 
 **Interfaces:**
 - Consumes: `PIIClass` (Task 3)
@@ -813,8 +813,8 @@ git commit -m "feat: add sqlglot-based read-only query guard"
 ```python
 import pytest
 
-from agah.models.entity import PIIClass
-from agah.safety.pii import classify_column, mask_value
+from jamasp.models.entity import PIIClass
+from jamasp.safety.pii import classify_column, mask_value
 
 
 @pytest.mark.parametrize(
@@ -865,12 +865,12 @@ Expected: FAIL — `ImportError: cannot import name 'classify_column'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/safety/pii.py`:
+`apps/api/jamasp/safety/pii.py`:
 
 ```python
 import re
 
-from agah.models.entity import PIIClass
+from jamasp.models.entity import PIIClass
 
 HIGH_NAME_PATTERNS = [
     r"national_?id", r"کدملی", r"کد_?ملی", r"ssn", r"passport", r"شماره_?گذرنامه",
@@ -945,7 +945,7 @@ Expected: PASS — 16 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/safety/pii.py apps/api/tests/unit/test_pii.py
+git add apps/api/jamasp/safety/pii.py apps/api/tests/unit/test_pii.py
 git commit -m "feat: add PII classification and masking with Persian patterns"
 ```
 
@@ -954,7 +954,7 @@ git commit -m "feat: add PII classification and masking with Persian patterns"
 ### Task 6: Adapter protocol and Postgres introspection
 
 **Files:**
-- Create: `apps/api/agah/adapters/__init__.py`, `apps/api/agah/adapters/base.py`, `apps/api/agah/adapters/postgres.py`, `apps/api/agah/adapters/registry.py`, `apps/api/agah/pipeline/__init__.py`, `apps/api/agah/pipeline/snapshot.py`, `apps/api/tests/fixtures/hr_schema.sql`, `apps/api/tests/integration/test_postgres_adapter.py`
+- Create: `apps/api/jamasp/adapters/__init__.py`, `apps/api/jamasp/adapters/base.py`, `apps/api/jamasp/adapters/postgres.py`, `apps/api/jamasp/adapters/registry.py`, `apps/api/jamasp/pipeline/__init__.py`, `apps/api/jamasp/pipeline/snapshot.py`, `apps/api/tests/fixtures/hr_schema.sql`, `apps/api/tests/integration/test_postgres_adapter.py`
 - Modify: `apps/api/tests/conftest.py`
 
 **Interfaces:**
@@ -1028,8 +1028,8 @@ INSERT INTO t_mst_01 (fld_002, fld_003) VALUES
 ```python
 import pytest
 
-from agah.adapters.postgres import PostgresAdapter
-from agah.safety.readonly import UnsafeQueryError
+from jamasp.adapters.postgres import PostgresAdapter
+from jamasp.safety.readonly import UnsafeQueryError
 
 
 @pytest.mark.asyncio
@@ -1097,11 +1097,11 @@ Add an `hr_dsn` session fixture to `conftest.py` that starts a `postgres:16` tes
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/integration/test_postgres_adapter.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.adapters'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.adapters'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/pipeline/snapshot.py`:
+`apps/api/jamasp/pipeline/snapshot.py`:
 
 ```python
 import hashlib
@@ -1177,19 +1177,19 @@ class HealthReport:
     error: str | None = None
 ```
 
-`apps/api/agah/adapters/base.py` defines the `SourceAdapter` Protocol with the five async methods listed in the Interfaces block above, re-exporting the snapshot dataclasses.
+`apps/api/jamasp/adapters/base.py` defines the `SourceAdapter` Protocol with the five async methods listed in the Interfaces block above, re-exporting the snapshot dataclasses.
 
-`apps/api/agah/adapters/postgres.py` implements it with SQLAlchemy async reflection plus these dialect queries:
+`apps/api/jamasp/adapters/postgres.py` implements it with SQLAlchemy async reflection plus these dialect queries:
 
 ```python
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from agah.adapters.base import SourceAdapter
-from agah.pipeline.snapshot import (
+from jamasp.adapters.base import SourceAdapter
+from jamasp.pipeline.snapshot import (
     ColumnInfo, EntitySnapshot, ForeignKeyInfo, HealthReport, StructuralSnapshot,
 )
-from agah.safety.readonly import apply_limit, assert_readonly
+from jamasp.safety.readonly import apply_limit, assert_readonly
 
 SYSTEM_SCHEMAS = ("pg_catalog", "information_schema", "pg_toast")
 
@@ -1249,7 +1249,7 @@ Expected: PASS — 7 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/adapters apps/api/agah/pipeline/snapshot.py apps/api/tests
+git add apps/api/jamasp/adapters apps/api/jamasp/pipeline/snapshot.py apps/api/tests
 git commit -m "feat: add source adapter protocol and Postgres introspection"
 ```
 
@@ -1258,7 +1258,7 @@ git commit -m "feat: add source adapter protocol and Postgres introspection"
 ### Task 7: Profiler with masking, and the negative privacy test
 
 **Files:**
-- Create: `apps/api/agah/pipeline/profile.py`, `apps/api/tests/integration/test_profile.py`
+- Create: `apps/api/jamasp/pipeline/profile.py`, `apps/api/tests/integration/test_profile.py`
 
 **Interfaces:**
 - Consumes: `SourceAdapter` (Task 6), `classify_column`, `mask_value` (Task 5), `SamplingPolicy` (Task 3)
@@ -1273,10 +1273,10 @@ This task carries the spec's central privacy guarantee. The decisive test is neg
 ```python
 import pytest
 
-from agah.adapters.postgres import PostgresAdapter
-from agah.models.entity import PIIClass
-from agah.models.source import SamplingPolicy
-from agah.pipeline.profile import profile_entity
+from jamasp.adapters.postgres import PostgresAdapter
+from jamasp.models.entity import PIIClass
+from jamasp.models.source import SamplingPolicy
+from jamasp.pipeline.profile import profile_entity
 
 
 @pytest.fixture
@@ -1339,21 +1339,21 @@ async def test_opaque_column_name_still_masked_by_value_shape(hr_dsn):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/integration/test_profile.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.pipeline.profile'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.pipeline.profile'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/pipeline/profile.py`:
+`apps/api/jamasp/pipeline/profile.py`:
 
 ```python
 from dataclasses import dataclass, field
 from typing import Any
 
-from agah.adapters.base import SourceAdapter
-from agah.models.entity import PIIClass
-from agah.models.source import SamplingPolicy
-from agah.pipeline.snapshot import EntitySnapshot
-from agah.safety.pii import classify_column, mask_value
+from jamasp.adapters.base import SourceAdapter
+from jamasp.models.entity import PIIClass
+from jamasp.models.source import SamplingPolicy
+from jamasp.pipeline.snapshot import EntitySnapshot
+from jamasp.safety.pii import classify_column, mask_value
 
 
 @dataclass
@@ -1442,7 +1442,7 @@ Expected: PASS — 5 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/pipeline/profile.py apps/api/agah/adapters apps/api/tests/integration/test_profile.py
+git add apps/api/jamasp/pipeline/profile.py apps/api/jamasp/adapters apps/api/tests/integration/test_profile.py
 git commit -m "feat: add profiler with PII masking and privacy regression test"
 ```
 
@@ -1451,7 +1451,7 @@ git commit -m "feat: add profiler with PII masking and privacy regression test"
 ### Task 8: Join probe for undeclared relationships
 
 **Files:**
-- Create: `apps/api/agah/pipeline/probe.py`, `apps/api/tests/integration/test_probe.py`
+- Create: `apps/api/jamasp/pipeline/probe.py`, `apps/api/tests/integration/test_probe.py`
 
 **Interfaces:**
 - Consumes: `SourceAdapter` (Task 6), `StructuralSnapshot` (Task 6)
@@ -1466,8 +1466,8 @@ This is the compensation for rejecting the agentic-explorer architecture. Fixtur
 ```python
 import pytest
 
-from agah.adapters.postgres import PostgresAdapter
-from agah.pipeline.probe import probe_relationships
+from jamasp.adapters.postgres import PostgresAdapter
+from jamasp.pipeline.probe import probe_relationships
 
 
 @pytest.mark.asyncio
@@ -1511,18 +1511,18 @@ async def test_ignores_type_mismatched_candidates(hr_dsn):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/integration/test_probe.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.pipeline.probe'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.pipeline.probe'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/pipeline/probe.py`:
+`apps/api/jamasp/pipeline/probe.py`:
 
 ```python
 import re
 from dataclasses import dataclass
 
-from agah.adapters.base import SourceAdapter
-from agah.pipeline.snapshot import EntitySnapshot, StructuralSnapshot
+from jamasp.adapters.base import SourceAdapter
+from jamasp.pipeline.snapshot import EntitySnapshot, StructuralSnapshot
 
 INTEGER_TYPES = {"integer", "bigint", "smallint", "serial", "bigserial", "numeric"}
 
@@ -1621,7 +1621,7 @@ Expected: PASS — 4 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/pipeline/probe.py apps/api/agah/adapters apps/api/tests/integration/test_probe.py
+git add apps/api/jamasp/pipeline/probe.py apps/api/jamasp/adapters apps/api/tests/integration/test_probe.py
 git commit -m "feat: infer undeclared relationships via bounded join probe"
 ```
 
@@ -1630,7 +1630,7 @@ git commit -m "feat: infer undeclared relationships via bounded join probe"
 ### Task 9: LLM provider abstraction with task routing
 
 **Files:**
-- Create: `apps/api/agah/llm/__init__.py`, `apps/api/agah/llm/base.py`, `apps/api/agah/llm/openai_compat.py`, `apps/api/agah/llm/router.py`, `apps/api/tests/unit/test_llm_router.py`
+- Create: `apps/api/jamasp/llm/__init__.py`, `apps/api/jamasp/llm/base.py`, `apps/api/jamasp/llm/openai_compat.py`, `apps/api/jamasp/llm/router.py`, `apps/api/tests/unit/test_llm_router.py`
 
 **Interfaces:**
 - Consumes: `Setting`, `LLMCall` models (Task 3)
@@ -1649,9 +1649,9 @@ git commit -m "feat: infer undeclared relationships via bounded join probe"
 ```python
 import pytest
 
-from agah.llm.base import Completion
-from agah.llm.router import RouteExhaustedError, call_task
-from agah.models.observability import LLMCall
+from jamasp.llm.base import Completion
+from jamasp.llm.router import RouteExhaustedError, call_task
+from jamasp.models.observability import LLMCall
 
 
 class FakeProvider:
@@ -1669,7 +1669,7 @@ class FakeProvider:
 @pytest.mark.asyncio
 async def test_routes_task_to_configured_provider(session, monkeypatch):
     primary = FakeProvider("openrouter")
-    monkeypatch.setattr("agah.llm.router.build_provider", lambda name, cfg: primary)
+    monkeypatch.setattr("jamasp.llm.router.build_provider", lambda name, cfg: primary)
 
     result = await call_task(session, "describe_entity", [{"role": "user", "content": "hi"}])
     assert result.text == '{"ok": true}'
@@ -1680,7 +1680,7 @@ async def test_routes_task_to_configured_provider(session, monkeypatch):
 async def test_falls_back_when_primary_fails(session, monkeypatch):
     providers = {"openrouter": FakeProvider("openrouter", fail=True),
                  "gapgpt": FakeProvider("gapgpt")}
-    monkeypatch.setattr("agah.llm.router.build_provider", lambda name, cfg: providers[name])
+    monkeypatch.setattr("jamasp.llm.router.build_provider", lambda name, cfg: providers[name])
 
     result = await call_task(session, "describe_entity", [{"role": "user", "content": "hi"}])
     assert result.provider == "gapgpt"
@@ -1689,7 +1689,7 @@ async def test_falls_back_when_primary_fails(session, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_raises_when_every_provider_fails(session, monkeypatch):
-    monkeypatch.setattr("agah.llm.router.build_provider",
+    monkeypatch.setattr("jamasp.llm.router.build_provider",
                         lambda name, cfg: FakeProvider(name, fail=True))
     with pytest.raises(RouteExhaustedError):
         await call_task(session, "describe_entity", [{"role": "user", "content": "hi"}])
@@ -1697,7 +1697,7 @@ async def test_raises_when_every_provider_fails(session, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_logs_token_usage_for_cost_visibility(session, monkeypatch):
-    monkeypatch.setattr("agah.llm.router.build_provider",
+    monkeypatch.setattr("jamasp.llm.router.build_provider",
                         lambda name, cfg: FakeProvider("openrouter"))
     await call_task(session, "describe_entity", [{"role": "user", "content": "hi"}])
     await session.flush()
@@ -1710,7 +1710,7 @@ async def test_logs_token_usage_for_cost_visibility(session, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_api_key_never_appears_in_log_row(session, monkeypatch):
-    monkeypatch.setattr("agah.llm.router.build_provider",
+    monkeypatch.setattr("jamasp.llm.router.build_provider",
                         lambda name, cfg: FakeProvider("openrouter"))
     await call_task(session, "describe_entity", [{"role": "user", "content": "hi"}])
     await session.flush()
@@ -1721,11 +1721,11 @@ async def test_api_key_never_appears_in_log_row(session, monkeypatch):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_llm_router.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.llm'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.llm'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/llm/base.py`:
+`apps/api/jamasp/llm/base.py`:
 
 ```python
 from dataclasses import dataclass
@@ -1751,9 +1751,9 @@ class LLMProvider(Protocol):
     async def embed(self, texts: list[str], *, model: str) -> list[list[float]]: ...
 ```
 
-`apps/api/agah/llm/openai_compat.py` — one `httpx.AsyncClient`-based implementation serving all three providers, since GapGPT, OpenRouter and local runtimes are all OpenAI-compatible and differ only in base URL and headers. Uses `response_format={"type": "json_schema", ...}` when `schema` is given. Timeout 120s, no retry (the router owns retry).
+`apps/api/jamasp/llm/openai_compat.py` — one `httpx.AsyncClient`-based implementation serving all three providers, since GapGPT, OpenRouter and local runtimes are all OpenAI-compatible and differ only in base URL and headers. Uses `response_format={"type": "json_schema", ...}` when `schema` is given. Timeout 120s, no retry (the router owns retry).
 
-`apps/api/agah/llm/router.py`:
+`apps/api/jamasp/llm/router.py`:
 
 ```python
 import asyncio
@@ -1761,9 +1761,9 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from agah.llm.base import Completion
-from agah.llm.openai_compat import OpenAICompatProvider
-from agah.models.observability import LLMCall
+from jamasp.llm.base import Completion
+from jamasp.llm.openai_compat import OpenAICompatProvider
+from jamasp.models.observability import LLMCall
 
 
 class RouteExhaustedError(Exception):
@@ -1839,7 +1839,7 @@ async def call_task(session: AsyncSession, task: str, messages, *, schema=None,
     raise RouteExhaustedError(f"all providers failed for task {task}: {last_error}")
 ```
 
-`load_route()` reads `settings["llm_routes"]` falling back to `DEFAULT_ROUTES`; `load_provider_config()` reads `settings["llm_providers"]`, decrypting each `api_key` with `agah.security.crypto`.
+`load_route()` reads `settings["llm_routes"]` falling back to `DEFAULT_ROUTES`; `load_provider_config()` reads `settings["llm_providers"]`, decrypting each `api_key` with `jamasp.security.crypto`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1849,7 +1849,7 @@ Expected: PASS — 5 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/llm apps/api/tests/unit/test_llm_router.py
+git add apps/api/jamasp/llm apps/api/tests/unit/test_llm_router.py
 git commit -m "feat: add LLM provider abstraction with per-task routing and cost logging"
 ```
 
@@ -1858,7 +1858,7 @@ git commit -m "feat: add LLM provider abstraction with per-task routing and cost
 ### Task 10: Describer
 
 **Files:**
-- Create: `apps/api/agah/llm/prompts/__init__.py`, `apps/api/agah/llm/prompts/describe_entity.py`, `apps/api/agah/pipeline/describe.py`, `apps/api/tests/fixtures/cassettes/describe_leave_requests.json`, `apps/api/tests/unit/test_describe.py`
+- Create: `apps/api/jamasp/llm/prompts/__init__.py`, `apps/api/jamasp/llm/prompts/describe_entity.py`, `apps/api/jamasp/pipeline/describe.py`, `apps/api/tests/fixtures/cassettes/describe_leave_requests.json`, `apps/api/tests/unit/test_describe.py`
 
 **Interfaces:**
 - Consumes: `call_task` (Task 9), `EntityProfile` (Task 7), `EntitySnapshot` (Task 6)
@@ -1874,9 +1874,9 @@ from pathlib import Path
 
 import pytest
 
-from agah.llm.base import Completion
-from agah.llm.prompts.describe_entity import build_describe_messages
-from agah.pipeline.describe import DescribeFailed, describe_entity
+from jamasp.llm.base import Completion
+from jamasp.llm.prompts.describe_entity import build_describe_messages
+from jamasp.pipeline.describe import DescribeFailed, describe_entity
 
 CASSETTE = json.loads(
     (Path(__file__).parent.parent / "fixtures/cassettes/describe_leave_requests.json").read_text()
@@ -1892,7 +1892,7 @@ def _completion(text):
 async def test_produces_bilingual_description(session, monkeypatch, leave_entity, leave_profile):
     async def fake_call(*a, **kw):
         return _completion(json.dumps(CASSETTE))
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
 
     result = await describe_entity(session, leave_entity, leave_profile, [], scan_id=None)
     assert result.summary["fa"] and result.summary["en"]
@@ -1903,7 +1903,7 @@ async def test_produces_bilingual_description(session, monkeypatch, leave_entity
 async def test_decodes_coded_status_column(session, monkeypatch, leave_entity, leave_profile):
     async def fake_call(*a, **kw):
         return _completion(json.dumps(CASSETTE))
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
 
     result = await describe_entity(session, leave_entity, leave_profile, [], scan_id=None)
     status = next(f for f in result.fields if f["name"] == "status")
@@ -1918,7 +1918,7 @@ async def test_repairs_malformed_json_on_second_attempt(session, monkeypatch,
 
     async def fake_call(*a, **kw):
         return responses.pop(0)
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
 
     result = await describe_entity(session, leave_entity, leave_profile, [], scan_id=None)
     assert result.summary["fa"]
@@ -1929,7 +1929,7 @@ async def test_repairs_malformed_json_on_second_attempt(session, monkeypatch,
 async def test_raises_after_repair_also_fails(session, monkeypatch, leave_entity, leave_profile):
     async def fake_call(*a, **kw):
         return _completion("still not json")
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
 
     with pytest.raises(DescribeFailed):
         await describe_entity(session, leave_entity, leave_profile, [], scan_id=None)
@@ -1955,11 +1955,11 @@ Add `leave_entity`, `leave_profile`, `employees_entity`, `employees_profile` fix
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_describe.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.pipeline.describe'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.pipeline.describe'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/llm/prompts/describe_entity.py`:
+`apps/api/jamasp/llm/prompts/describe_entity.py`:
 
 ```python
 import json
@@ -1996,7 +1996,7 @@ DESCRIBE_SCHEMA = {
     "required": ["summary", "grain", "fields", "confidence"],
 }
 
-SYSTEM = """You are a database analyst for آگاه, a bilingual (Persian/English) reporting tool.
+SYSTEM = """You are a database analyst for جاماسپ, a bilingual (Persian/English) reporting tool.
 Given a table's structure and masked sample values, explain what it means in business terms.
 
 Rules:
@@ -2044,7 +2044,7 @@ def build_describe_messages(entity, profile, neighbors) -> list[dict[str, str]]:
 
 Note the column zip must key on column name rather than position — implement it as a name-indexed lookup so a reordered profile cannot misalign meanings with columns.
 
-`apps/api/agah/pipeline/describe.py` calls `call_task(session, "describe_entity", messages, schema=DESCRIBE_SCHEMA, scan_id=scan_id)`, parses the JSON, and on `JSONDecodeError` or schema-validation failure retries **once** with the parse error appended as a user message; a second failure raises `DescribeFailed`.
+`apps/api/jamasp/pipeline/describe.py` calls `call_task(session, "describe_entity", messages, schema=DESCRIBE_SCHEMA, scan_id=scan_id)`, parses the JSON, and on `JSONDecodeError` or schema-validation failure retries **once** with the parse error appended as a user message; a second failure raises `DescribeFailed`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -2054,7 +2054,7 @@ Expected: PASS — 6 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/llm/prompts apps/api/agah/pipeline/describe.py apps/api/tests
+git add apps/api/jamasp/llm/prompts apps/api/jamasp/pipeline/describe.py apps/api/tests
 git commit -m "feat: add bilingual LLM entity describer with JSON repair pass"
 ```
 
@@ -2063,7 +2063,7 @@ git commit -m "feat: add bilingual LLM entity describer with JSON repair pass"
 ### Task 11: Snapshot diff engine
 
 **Files:**
-- Create: `apps/api/agah/pipeline/diff.py`, `apps/api/tests/unit/test_diff.py`
+- Create: `apps/api/jamasp/pipeline/diff.py`, `apps/api/tests/unit/test_diff.py`
 
 **Interfaces:**
 - Consumes: `StructuralSnapshot`, `EntitySnapshot` (Task 6), `EntityStatus` (Task 3)
@@ -2080,9 +2080,9 @@ from dataclasses import replace
 
 import pytest
 
-from agah.models.entity import EntityStatus
-from agah.pipeline.diff import diff_snapshots, status_for
-from agah.pipeline.snapshot import ColumnInfo, EntitySnapshot, StructuralSnapshot
+from jamasp.models.entity import EntityStatus
+from jamasp.pipeline.diff import diff_snapshots, status_for
+from jamasp.pipeline.snapshot import ColumnInfo, EntitySnapshot, StructuralSnapshot
 
 
 def _column(name, data_type="integer", ordinal=0, nullable=True, is_pk=False):
@@ -2164,17 +2164,17 @@ def test_status_mapping(change, expected):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/unit/test_diff.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.pipeline.diff'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.pipeline.diff'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/pipeline/diff.py`:
+`apps/api/jamasp/pipeline/diff.py`:
 
 ```python
 from dataclasses import dataclass, field
 
-from agah.models.entity import EntityStatus
-from agah.pipeline.snapshot import EntitySnapshot, StructuralSnapshot
+from jamasp.models.entity import EntityStatus
+from jamasp.pipeline.snapshot import EntitySnapshot, StructuralSnapshot
 
 Identity = tuple[str, str]
 
@@ -2257,7 +2257,7 @@ Expected: PASS — 9 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/pipeline/diff.py apps/api/tests/unit/test_diff.py
+git add apps/api/jamasp/pipeline/diff.py apps/api/tests/unit/test_diff.py
 git commit -m "feat: add structural snapshot diff engine"
 ```
 
@@ -2266,7 +2266,7 @@ git commit -m "feat: add structural snapshot diff engine"
 ### Task 12: Scan orchestrator
 
 **Files:**
-- Create: `apps/api/agah/pipeline/embed.py`, `apps/api/agah/pipeline/orchestrator.py`, `apps/api/agah/pipeline/worker.py`, `apps/api/tests/integration/test_orchestrator.py`
+- Create: `apps/api/jamasp/pipeline/embed.py`, `apps/api/jamasp/pipeline/orchestrator.py`, `apps/api/jamasp/pipeline/worker.py`, `apps/api/tests/integration/test_orchestrator.py`
 
 **Interfaces:**
 - Consumes: every pipeline stage (Tasks 6–11), `adapter_for` (Task 6), models (Task 3)
@@ -2283,11 +2283,11 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from agah.llm.base import Completion
-from agah.models.entity import Entity, EntityStatus
-from agah.models.relationship import Relationship, RelationshipKind
-from agah.models.scan import Scan, ScanStatus
-from agah.pipeline.orchestrator import run_scan
+from jamasp.llm.base import Completion
+from jamasp.models.entity import Entity, EntityStatus
+from jamasp.models.relationship import Relationship, RelationshipKind
+from jamasp.models.scan import Scan, ScanStatus
+from jamasp.pipeline.orchestrator import run_scan
 
 CASSETTE = json.loads(
     (Path(__file__).parent.parent / "fixtures/cassettes/describe_generic.json").read_text()
@@ -2299,8 +2299,8 @@ def stub_llm(monkeypatch):
     async def fake_call(session, task, messages, **kw):
         return Completion(text=json.dumps(CASSETTE), tokens_in=50, tokens_out=80,
                           model="stub", provider="stub", latency_ms=1)
-    monkeypatch.setattr("agah.pipeline.describe.call_task", fake_call)
-    monkeypatch.setattr("agah.pipeline.embed.embed_texts",
+    monkeypatch.setattr("jamasp.pipeline.describe.call_task", fake_call)
+    monkeypatch.setattr("jamasp.pipeline.embed.embed_texts",
                         lambda session, texts, **kw: [[0.0] * 1024 for _ in texts])
 
 
@@ -2354,7 +2354,7 @@ async def test_rescan_preserves_approved_entities(session, hr_source, stub_llm, 
 
 @pytest.mark.asyncio
 async def test_describe_failure_isolates_to_one_entity(session, hr_source, monkeypatch):
-    from agah.pipeline.describe import DescribeFailed
+    from jamasp.pipeline.describe import DescribeFailed
 
     calls = {"n": 0}
 
@@ -2363,7 +2363,7 @@ async def test_describe_failure_isolates_to_one_entity(session, hr_source, monke
         if entity.name == "t_mst_01":
             raise DescribeFailed("model refused")
         return _valid_description()
-    monkeypatch.setattr("agah.pipeline.orchestrator.describe_entity", flaky)
+    monkeypatch.setattr("jamasp.pipeline.orchestrator.describe_entity", flaky)
 
     scan = await run_scan(session, hr_source.pending_scan_id)
 
@@ -2387,11 +2387,11 @@ Add an `hr_source` fixture creating a `DataSource` row pointing at the fixture c
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd apps/api && uv run pytest tests/integration/test_orchestrator.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'agah.pipeline.orchestrator'`
+Expected: FAIL — `ModuleNotFoundError: No module named 'jamasp.pipeline.orchestrator'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`apps/api/agah/pipeline/orchestrator.py` — sequences the stages, persisting after each so a worker restart resumes at the last completed stage:
+`apps/api/jamasp/pipeline/orchestrator.py` — sequences the stages, persisting after each so a worker restart resumes at the last completed stage:
 
 ```python
 async def run_scan(session, scan_id, progress=None):
@@ -2474,7 +2474,7 @@ Expected: PASS — 5 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/pipeline apps/api/tests/integration/test_orchestrator.py
+git add apps/api/jamasp/pipeline apps/api/tests/integration/test_orchestrator.py
 git commit -m "feat: add scan orchestrator with per-entity failure isolation"
 ```
 
@@ -2483,8 +2483,8 @@ git commit -m "feat: add scan orchestrator with per-entity failure isolation"
 ### Task 13: Auth and admin authorization
 
 **Files:**
-- Create: `apps/api/agah/security/password.py`, `apps/api/agah/security/tokens.py`, `apps/api/agah/security/deps.py`, `apps/api/agah/routers/__init__.py`, `apps/api/agah/routers/auth.py`, `apps/api/agah/schemas/auth.py`, `apps/api/tests/integration/test_auth.py`
-- Modify: `apps/api/agah/main.py`
+- Create: `apps/api/jamasp/security/password.py`, `apps/api/jamasp/security/tokens.py`, `apps/api/jamasp/security/deps.py`, `apps/api/jamasp/routers/__init__.py`, `apps/api/jamasp/routers/auth.py`, `apps/api/jamasp/schemas/auth.py`, `apps/api/tests/integration/test_auth.py`
+- Modify: `apps/api/jamasp/main.py`
 
 **Interfaces:**
 - Consumes: `User`, `UserRole` (Task 3), `Settings` (Task 1)
@@ -2504,7 +2504,7 @@ async def test_login_sets_httponly_cookie(client, admin_user):
                                  json={"email": admin_user.email, "password": "correct-horse"})
     assert response.status_code == 200
     cookie = response.cookies.jar._cookies
-    assert "agah_session" in response.headers["set-cookie"]
+    assert "jamasp_session" in response.headers["set-cookie"]
     assert "HttpOnly" in response.headers["set-cookie"]
 
 
@@ -2542,7 +2542,7 @@ Expected: FAIL — 404 on `/api/auth/login`
 
 - [ ] **Step 3: Write minimal implementation**
 
-`password.py` wraps `argon2.PasswordHasher`. `tokens.py` issues a PyJWT HS256 token carrying `sub`, `role`, `exp` (12h), signed with `settings.jwt_secret`. `deps.py` reads the `agah_session` cookie, decodes it, loads the `User`, and raises 401/403 as appropriate. `routers/auth.py` exposes `POST /api/auth/login` (sets the httpOnly, SameSite=Lax cookie), `POST /api/auth/logout`, and `GET /api/auth/me`. `schemas/auth.py` defines `LoginRequest` and `UserOut` — `UserOut` has no password field at all, so the hash cannot leak by omission of `exclude`.
+`password.py` wraps `argon2.PasswordHasher`. `tokens.py` issues a PyJWT HS256 token carrying `sub`, `role`, `exp` (12h), signed with `settings.jwt_secret`. `deps.py` reads the `jamasp_session` cookie, decodes it, loads the `User`, and raises 401/403 as appropriate. `routers/auth.py` exposes `POST /api/auth/login` (sets the httpOnly, SameSite=Lax cookie), `POST /api/auth/logout`, and `GET /api/auth/me`. `schemas/auth.py` defines `LoginRequest` and `UserOut` — `UserOut` has no password field at all, so the hash cannot leak by omission of `exclude`.
 
 Register the router in `create_app()`. Add a `seed-admin` CLI entrypoint that creates the first admin from env vars.
 
@@ -2554,7 +2554,7 @@ Expected: PASS — 5 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/security apps/api/agah/routers apps/api/agah/schemas apps/api/agah/main.py apps/api/tests/integration/test_auth.py
+git add apps/api/jamasp/security apps/api/jamasp/routers apps/api/jamasp/schemas apps/api/jamasp/main.py apps/api/tests/integration/test_auth.py
 git commit -m "feat: add cookie auth with admin/analyst roles"
 ```
 
@@ -2563,8 +2563,8 @@ git commit -m "feat: add cookie auth with admin/analyst roles"
 ### Task 14: Sources and scans API with SSE progress
 
 **Files:**
-- Create: `apps/api/agah/routers/sources.py`, `apps/api/agah/routers/scans.py`, `apps/api/agah/schemas/source.py`, `apps/api/agah/schemas/scan.py`, `apps/api/tests/integration/test_sources_api.py`
-- Modify: `apps/api/agah/main.py`
+- Create: `apps/api/jamasp/routers/sources.py`, `apps/api/jamasp/routers/scans.py`, `apps/api/jamasp/schemas/source.py`, `apps/api/jamasp/schemas/scan.py`, `apps/api/tests/integration/test_sources_api.py`
+- Modify: `apps/api/jamasp/main.py`
 
 **Interfaces:**
 - Consumes: `require_admin` (Task 13), `adapter_for` (Task 6), arq queue (Task 12)
@@ -2643,7 +2643,7 @@ Expected: PASS — 5 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/routers apps/api/agah/schemas apps/api/tests/integration/test_sources_api.py
+git add apps/api/jamasp/routers apps/api/jamasp/schemas apps/api/tests/integration/test_sources_api.py
 git commit -m "feat: add sources and scans API with SSE progress stream"
 ```
 
@@ -2652,8 +2652,8 @@ git commit -m "feat: add sources and scans API with SSE progress stream"
 ### Task 15: Review API
 
 **Files:**
-- Create: `apps/api/agah/routers/entities.py`, `apps/api/agah/schemas/entity.py`, `apps/api/tests/integration/test_entities_api.py`
-- Modify: `apps/api/agah/main.py`
+- Create: `apps/api/jamasp/routers/entities.py`, `apps/api/jamasp/schemas/entity.py`, `apps/api/tests/integration/test_entities_api.py`
+- Modify: `apps/api/jamasp/main.py`
 
 **Interfaces:**
 - Consumes: `Entity`, `Field`, `Relationship` (Task 3), `require_admin` (Task 13)
@@ -2666,7 +2666,7 @@ git commit -m "feat: add sources and scans API with SSE progress stream"
 ```python
 import pytest
 
-from agah.models.entity import EntityStatus
+from jamasp.models.entity import EntityStatus
 
 
 @pytest.mark.asyncio
@@ -2763,7 +2763,7 @@ Expected: PASS — 8 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/routers/entities.py apps/api/agah/schemas/entity.py apps/api/tests/integration/test_entities_api.py
+git add apps/api/jamasp/routers/entities.py apps/api/jamasp/schemas/entity.py apps/api/tests/integration/test_entities_api.py
 git commit -m "feat: add entity review API with inline edit and bulk approve"
 ```
 
@@ -2772,8 +2772,8 @@ git commit -m "feat: add entity review API with inline edit and bulk approve"
 ### Task 16: Settings API for providers and model routing
 
 **Files:**
-- Create: `apps/api/agah/routers/settings.py`, `apps/api/agah/schemas/settings.py`, `apps/api/tests/integration/test_settings_api.py`
-- Modify: `apps/api/agah/main.py`
+- Create: `apps/api/jamasp/routers/settings.py`, `apps/api/jamasp/schemas/settings.py`, `apps/api/tests/integration/test_settings_api.py`
+- Modify: `apps/api/jamasp/main.py`
 
 **Interfaces:**
 - Consumes: `Setting` model (Task 3), `crypto` (Task 2), `DEFAULT_ROUTES` (Task 9)
@@ -2849,7 +2849,7 @@ Expected: PASS — 5 passed
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/routers/settings.py apps/api/agah/schemas/settings.py apps/api/tests/integration/test_settings_api.py
+git add apps/api/jamasp/routers/settings.py apps/api/jamasp/schemas/settings.py apps/api/tests/integration/test_settings_api.py
 git commit -m "feat: add LLM provider and model routing settings API"
 ```
 
@@ -2858,8 +2858,8 @@ git commit -m "feat: add LLM provider and model routing settings API"
 ### Task 17: Knowledge export and end-to-end acceptance
 
 **Files:**
-- Create: `apps/api/agah/routers/knowledge.py`, `apps/api/agah/schemas/knowledge.py`, `apps/api/tests/e2e/test_scan_to_export.py`, `apps/api/tests/fixtures/expected_knowledge.json`
-- Modify: `apps/api/agah/main.py`
+- Create: `apps/api/jamasp/routers/knowledge.py`, `apps/api/jamasp/schemas/knowledge.py`, `apps/api/tests/e2e/test_scan_to_export.py`, `apps/api/tests/fixtures/expected_knowledge.json`
+- Modify: `apps/api/jamasp/main.py`
 
 **Interfaces:**
 - Consumes: everything above
@@ -2998,7 +2998,7 @@ Expected: PASS — the full suite green
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/agah/routers/knowledge.py apps/api/agah/schemas/knowledge.py apps/api/tests
+git add apps/api/jamasp/routers/knowledge.py apps/api/jamasp/schemas/knowledge.py apps/api/tests
 git commit -m "feat: add knowledge export endpoint with end-to-end acceptance test"
 ```
 
@@ -3031,7 +3031,7 @@ git commit -m "feat: add knowledge export endpoint with end-to-end acceptance te
 
 **Gaps deferred by design:** acceptance criteria 9 (Persian RTL UI) and 11 (the other five adapters) belong to the two follow-up plans named in the scope note. Criterion 11's foundation — the `SourceAdapter` protocol and registry — is built here in Task 6, so each remaining adapter is an isolated addition with no changes to the pipeline.
 
-**Type consistency checked:** `EntitySnapshot.identity` is `tuple[schema_name, name]` everywhere (Tasks 6, 8, 11, 12). `PIIClass` is imported from `agah.models.entity` in both `safety/pii.py` and `pipeline/profile.py`. `call_task(session, task, messages, *, schema, scan_id)` has one signature across Tasks 9, 10, 12. `EntityStatus.ARCHIVED` (Task 3) is produced by `status_for("removed")` (Task 11) and consumed by `archive_removed` (Task 12). Adapter methods added incrementally — `column_stats` (Task 7) and `containment` (Task 8) — are declared on the `SourceAdapter` protocol in the task that introduces them.
+**Type consistency checked:** `EntitySnapshot.identity` is `tuple[schema_name, name]` everywhere (Tasks 6, 8, 11, 12). `PIIClass` is imported from `jamasp.models.entity` in both `safety/pii.py` and `pipeline/profile.py`. `call_task(session, task, messages, *, schema, scan_id)` has one signature across Tasks 9, 10, 12. `EntityStatus.ARCHIVED` (Task 3) is produced by `status_for("removed")` (Task 11) and consumed by `archive_removed` (Task 12). Adapter methods added incrementally — `column_stats` (Task 7) and `containment` (Task 8) — are declared on the `SourceAdapter` protocol in the task that introduces them.
 
 ---
 

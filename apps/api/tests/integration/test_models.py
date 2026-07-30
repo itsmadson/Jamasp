@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy import select
 
-from agah.models.entity import Entity, EntityStatus
-from agah.models.source import DataSource, SamplingPolicy, SourceKind
+from jamasp.models.entity import Entity, EntityStatus
+from jamasp.models.source import DataSource, SamplingPolicy, SourceKind
 
 
 @pytest.mark.asyncio

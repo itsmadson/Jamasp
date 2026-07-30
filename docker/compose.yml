@@ -1,20 +1,34 @@
+# The whole application, one command:
+#
+#   JAMASP_ADMIN_PASSWORD=choose-one docker compose -f docker/compose.yml up --build
+#
+# Secrets come from apps/api/.env (gitignored). Never inline them here.
+
+name: jamasp
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_USER: agah
-      POSTGRES_PASSWORD: agah
-      POSTGRES_DB: agah
+      POSTGRES_USER: jamasp
+      POSTGRES_PASSWORD: jamasp
+      POSTGRES_DB: jamasp
     ports: ["5432:5432"]
+    volumes: ["jamasp-pgdata:/var/lib/postgresql/data"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U agah"]
+      test: ["CMD-SHELL", "pg_isready -U jamasp"]
       interval: 5s
-      retries: 10
+      retries: 12
 
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 12
 
+  # A seeded stand-in for a customer database, so the stack is testable out of the box.
   fixture-postgres:
     image: postgres:16
     environment:
@@ -24,3 +38,50 @@ services:
     ports: ["5433:5432"]
     volumes:
       - ../apps/api/tests/fixtures/hr_schema.sql:/docker-entrypoint-initdb.d/01.sql:ro
+
+  api:
+    build: { context: ../apps/api }
+    env_file: ../apps/api/.env
+    environment:
+      JAMASP_DATABASE_URL: postgresql+asyncpg://jamasp:jamasp@postgres:5432/jamasp
+      JAMASP_REDIS_URL: redis://redis:6379/0
+      JAMASP_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      JAMASP_ADMIN_EMAIL: ${JAMASP_ADMIN_EMAIL:-admin@jamasp.local}
+      JAMASP_ADMIN_PASSWORD: ${JAMASP_ADMIN_PASSWORD:?set JAMASP_ADMIN_PASSWORD before starting}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: >
+      sh -c "alembic upgrade head
+      && python -m jamasp.cli seed-admin
+      && uvicorn jamasp.main:app --host 0.0.0.0 --port 8000"
+    ports: ["${JAMASP_API_PORT:-8010}:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/api/health')\""]
+      interval: 5s
+      retries: 20
+
+  worker:
+    build: { context: ../apps/api }
+    env_file: ../apps/api/.env
+    environment:
+      JAMASP_DATABASE_URL: postgresql+asyncpg://jamasp:jamasp@postgres:5432/jamasp
+      JAMASP_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      api: { condition: service_healthy }
+    command: arq jamasp.pipeline.worker.WorkerSettings
+
+  web:
+    build:
+      context: ../apps/web
+      args:
+        # Build-time, not runtime: Next bakes rewrites into its route manifest.
+        # The browser only ever talks to the web service, which keeps the session
+        # cookie first-party; this is the server-side hop inside the network.
+        JAMASP_API_ORIGIN: http://api:8000
+    depends_on:
+      api: { condition: service_healthy }
+    ports: ["${JAMASP_WEB_PORT:-3000}:3000"]
+
+volumes:
+  jamasp-pgdata:

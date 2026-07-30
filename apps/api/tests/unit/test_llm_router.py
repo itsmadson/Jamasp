@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy import select
 
-from agah.llm.base import Completion
-from agah.llm.router import RouteExhaustedError, call_task
-from agah.models.observability import LLMCall
+from jamasp.llm.base import Completion
+from jamasp.llm.router import RouteExhaustedError, call_task
+from jamasp.models.observability import LLMCall
 
 
 class FakeProvider:
@@ -23,7 +23,7 @@ class FakeProvider:
 @pytest.mark.asyncio
 async def test_routes_task_to_configured_provider(session, monkeypatch):
     primary = FakeProvider("openrouter")
-    monkeypatch.setattr("agah.llm.router.build_provider", lambda name, config: primary)
+    monkeypatch.setattr("jamasp.llm.router.build_provider", lambda name, config: primary)
 
     result = await call_task(session, "describe_entity", [{"role": "user", "content": "hi"}])
     assert result.text == '{"ok": true}'
@@ -36,7 +36,7 @@ async def test_falls_back_when_primary_fails(session, monkeypatch):
         "openrouter": FakeProvider("openrouter", fail=True),
         "gapgpt": FakeProvider("gapgpt"),
     }
-    monkeypatch.setattr("agah.llm.router.build_provider", lambda name, config: providers[name])
+    monkeypatch.setattr("jamasp.llm.router.build_provider", lambda name, config: providers[name])
 
     result = await call_task(
         session, "describe_entity", [{"role": "user", "content": "hi"}],
@@ -51,7 +51,7 @@ async def test_falls_back_when_primary_fails(session, monkeypatch):
 @pytest.mark.asyncio
 async def test_raises_when_every_provider_fails(session, monkeypatch):
     monkeypatch.setattr(
-        "agah.llm.router.build_provider", lambda name, config: FakeProvider(name, fail=True)
+        "jamasp.llm.router.build_provider", lambda name, config: FakeProvider(name, fail=True)
     )
     with pytest.raises(RouteExhaustedError):
         await call_task(
@@ -63,7 +63,7 @@ async def test_raises_when_every_provider_fails(session, monkeypatch):
 @pytest.mark.asyncio
 async def test_logs_token_usage_for_cost_visibility(session, monkeypatch):
     monkeypatch.setattr(
-        "agah.llm.router.build_provider", lambda name, config: FakeProvider("openrouter")
+        "jamasp.llm.router.build_provider", lambda name, config: FakeProvider("openrouter")
     )
     await call_task(session, "describe_entity", [{"role": "user", "content": "hi"}])
     await session.flush()
@@ -78,7 +78,7 @@ async def test_logs_token_usage_for_cost_visibility(session, monkeypatch):
 @pytest.mark.asyncio
 async def test_api_key_never_appears_in_log_row(session, monkeypatch):
     monkeypatch.setattr(
-        "agah.llm.router.build_provider", lambda name, config: FakeProvider("openrouter")
+        "jamasp.llm.router.build_provider", lambda name, config: FakeProvider("openrouter")
     )
     await call_task(session, "describe_entity", [{"role": "user", "content": "hi"}])
     await session.flush()
