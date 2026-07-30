@@ -40,6 +40,7 @@ services:
       - ../apps/api/tests/fixtures/hr_schema.sql:/docker-entrypoint-initdb.d/01.sql:ro
 
   api:
+    image: ghcr.io/itsmadson/jamasp-api:latest
     build: { context: ../apps/api }
     env_file: ../apps/api/.env
     environment:
@@ -62,6 +63,7 @@ services:
       retries: 20
 
   worker:
+    image: ghcr.io/itsmadson/jamasp-worker:latest
     build: { context: ../apps/api }
     env_file: ../apps/api/.env
     environment:
@@ -72,6 +74,7 @@ services:
     command: arq jamasp.pipeline.worker.WorkerSettings
 
   web:
+    image: ghcr.io/itsmadson/jamasp-web:latest
     build:
       context: ../apps/web
       args:
