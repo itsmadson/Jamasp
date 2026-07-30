@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  FileChartColumn,
+  type LucideIcon,
+  Send,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -230,7 +237,10 @@ export function Workspace({
                       role="alert"
                       className="rounded-lg bg-warning/10 px-4 py-3 text-sm text-warning"
                     >
-                      <p className="font-medium">{t(`refusal.${turn.refusalStatus}`)}</p>
+                      <p className="flex items-center gap-1.5 font-medium">
+                        <TriangleAlert aria-hidden size={15} />
+                        {t(`refusal.${turn.refusalStatus}`)}
+                      </p>
                       <p className="mt-0.5">{turn.message}</p>
                     </div>
                   ) : null}
@@ -261,10 +271,18 @@ export function Workspace({
 
         <form onSubmit={send} className="border-t border-border p-3">
           <div className="mb-2 flex gap-1.5">
-            <ModeChip active={mode === "answer"} onClick={() => setMode("answer")}>
+            <ModeChip
+              active={mode === "answer"}
+              onClick={() => setMode("answer")}
+              icon={Sparkles}
+            >
               {t("modeAnswer")}
             </ModeChip>
-            <ModeChip active={mode === "report"} onClick={() => setMode("report")}>
+            <ModeChip
+              active={mode === "report"}
+              onClick={() => setMode("report")}
+              icon={FileChartColumn}
+            >
               {t("modeReport")}
             </ModeChip>
             <span className="self-center ps-1 text-[11px] text-muted">
@@ -280,7 +298,13 @@ export function Workspace({
               disabled={!sourceId}
               className="flex-1 rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus-visible:border-accent disabled:opacity-50"
             />
-            <Button type="submit" disabled={busy || !question.trim() || !sourceId}>
+            <Button
+              type="submit"
+              disabled={busy || !question.trim() || !sourceId}
+              className="flex items-center gap-1.5"
+            >
+              {/* Mirrored under RTL, where a paper plane should fly leftward. */}
+              <Send aria-hidden size={15} className="rtl:-scale-x-100" />
               {t("send")}
             </Button>
           </div>
@@ -301,10 +325,12 @@ export function Workspace({
 function ModeChip({
   active,
   onClick,
+  icon: Icon,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  icon: LucideIcon;
   children: React.ReactNode;
 }) {
   return (
@@ -314,10 +340,11 @@ function ModeChip({
       aria-pressed={active}
       className={
         active
-          ? "rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground"
-          : "rounded-full border border-border px-3 py-1 text-xs text-muted hover:text-foreground"
+          ? "flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground"
+          : "flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted hover:text-foreground"
       }
     >
+      <Icon aria-hidden size={13} />
       {children}
     </button>
   );

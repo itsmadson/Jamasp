@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -36,7 +37,12 @@ export function SourceList({ locale }: { locale: string }) {
           <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted">{t("subtitle")}</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} type="button">
+        <Button
+          onClick={() => setDialogOpen(true)}
+          type="button"
+          className="flex items-center gap-1.5"
+        >
+          <Plus aria-hidden size={16} />
           {t("addSource")}
         </Button>
       </div>

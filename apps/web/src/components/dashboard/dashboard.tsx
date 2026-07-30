@@ -1,5 +1,19 @@
 "use client";
 
+import {
+  ChevronRight,
+  Database,
+  FileChartColumn,
+  ListChecks,
+  type LucideIcon,
+  MessageCircleQuestion,
+  MessagesSquare,
+  Plus,
+  RefreshCw,
+  ScanSearch,
+  Table2,
+  TriangleAlert,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -7,7 +21,20 @@ import { useEffect, useState } from "react";
 import { getOverview, type Overview, type SourceProgress } from "@/lib/api/overview";
 import { formatDate, formatNumber } from "@/lib/format";
 
-const STEPS = ["scan", "review", "ask"] as const;
+const STEPS = [
+  { key: "scan", icon: ScanSearch },
+  { key: "review", icon: ListChecks },
+  { key: "ask", icon: MessageCircleQuestion },
+] as const;
+
+// One glyph per state, so the button is recognisable before it is read.
+const ACTION_ICONS: Record<SourceProgress["next_step"], LucideIcon> = {
+  scan: ScanSearch,
+  scanning: RefreshCw,
+  review: ListChecks,
+  ask: MessageCircleQuestion,
+  ready: MessagesSquare,
+};
 
 /**
  * What is set up, what needs attention, and what to do next.
@@ -63,20 +90,39 @@ export function Dashboard({ locale }: { locale: string }) {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label={t("stat.sources")} value={totals.sources} locale={locale} />
-            <Stat label={t("stat.tables")} value={totals.entities} locale={locale} />
             <Stat
+              icon={Database}
+              label={t("stat.sources")}
+              value={totals.sources}
+              locale={locale}
+            />
+            <Stat
+              icon={Table2}
+              label={t("stat.tables")}
+              value={totals.entities}
+              locale={locale}
+            />
+            <Stat
+              icon={ListChecks}
               label={t("stat.pending")}
               value={totals.pending}
               locale={locale}
               tone={totals.pending > 0 ? "warning" : "plain"}
             />
-            <Stat label={t("stat.reports")} value={totals.reports} locale={locale} />
+            <Stat
+              icon={FileChartColumn}
+              label={t("stat.reports")}
+              value={totals.reports}
+              locale={locale}
+            />
           </div>
 
           {needsAttention.length > 0 ? (
             <section className="flex flex-col gap-2">
-              <h2 className="text-sm font-medium">{t("attention")}</h2>
+              <h2 className="flex items-center gap-1.5 text-sm font-medium">
+                <TriangleAlert aria-hidden size={15} className="text-warning" />
+                {t("attention")}
+              </h2>
               <ul className="flex flex-col gap-2">
                 {needsAttention.map((source) => (
                   <SourceRow key={source.id} source={source} locale={locale} />
@@ -114,10 +160,15 @@ export function Dashboard({ locale }: { locale: string }) {
                     <span
                       className={
                         item.kind === "report"
-                          ? "rounded bg-accent/12 px-1.5 py-0.5 text-[10px] text-accent"
-                          : "rounded bg-border/60 px-1.5 py-0.5 text-[10px] text-muted"
+                          ? "flex items-center gap-1 rounded bg-accent/12 px-1.5 py-0.5 text-[10px] text-accent"
+                          : "flex items-center gap-1 rounded bg-border/60 px-1.5 py-0.5 text-[10px] text-muted"
                       }
                     >
+                      {item.kind === "report" ? (
+                        <FileChartColumn aria-hidden size={11} />
+                      ) : (
+                        <MessageCircleQuestion aria-hidden size={11} />
+                      )}
                       {t(`kind.${item.kind}`)}
                     </span>
                     {item.kind === "report" ? (
@@ -145,11 +196,13 @@ export function Dashboard({ locale }: { locale: string }) {
 }
 
 function Stat({
+  icon: Icon,
   label,
   value,
   locale,
   tone = "plain",
 }: {
+  icon: LucideIcon;
   label: string;
   value: number;
   locale: string;
@@ -157,7 +210,10 @@ function Stat({
 }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <p className="text-xs text-muted">{label}</p>
+      <p className="flex items-center gap-1.5 text-xs text-muted">
+        <Icon aria-hidden size={14} />
+        {label}
+      </p>
       <p
         className={`mt-1 text-2xl font-semibold tabular-nums ${
           tone === "warning" && value > 0 ? "text-warning" : ""
@@ -179,6 +235,7 @@ function SourceRow({ source, locale }: { source: SourceProgress; locale: string 
         ? 1
         : 2;
 
+  const ActionIcon = ACTION_ICONS[source.next_step];
   const href =
     source.next_step === "review"
       ? `/${locale}/sources/${source.id}/review`
@@ -201,29 +258,38 @@ function SourceRow({ source, locale }: { source: SourceProgress; locale: string 
 
         <Link
           href={href}
-          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:opacity-90"
+          className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:opacity-90"
         >
+          <ActionIcon
+            aria-hidden
+            size={14}
+            className={source.next_step === "scanning" ? "animate-spin" : undefined}
+          />
           {t(`action.${source.next_step}`)}
+          {/* Flipped under RTL, where forward is leftward. */}
+          <ChevronRight aria-hidden size={14} className="rtl:-scale-x-100" />
         </Link>
       </div>
 
       {/* The journey, so the order of operations is visible rather than assumed. */}
       <ol className="mt-3 flex items-center gap-2">
         {STEPS.map((step, index) => (
-          <li key={step} className="flex flex-1 items-center gap-2">
-            <span
+          <li key={step.key} className="flex flex-1 items-center gap-2">
+            <step.icon
+              aria-hidden
+              size={14}
               className={
                 index < reached
-                  ? "size-2 shrink-0 rounded-full bg-accent"
+                  ? "shrink-0 text-accent"
                   : index === reached
-                    ? "size-2 shrink-0 rounded-full bg-accent/60 ring-2 ring-accent/25"
-                    : "size-2 shrink-0 rounded-full bg-border"
+                    ? "shrink-0 text-accent"
+                    : "shrink-0 text-muted/50"
               }
             />
             <span
               className={`text-[11px] ${index <= reached ? "text-foreground" : "text-muted"}`}
             >
-              {t(`step.${step}`)}
+              {t(`step.${step.key}`)}
             </span>
             {index < STEPS.length - 1 ? (
               <span
@@ -260,8 +326,9 @@ function FirstRun({ locale }: { locale: string }) {
       <p className="mx-auto mt-2 max-w-md text-sm text-muted">{t("firstRunBody")}</p>
       <Link
         href={`/${locale}/sources`}
-        className="mt-5 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90"
+        className="mt-5 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90"
       >
+        <Plus aria-hidden size={16} />
         {t("firstRunAction")}
       </Link>
     </section>

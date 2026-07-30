@@ -1,3 +1,4 @@
+import { Database, LayoutDashboard, MessagesSquare, Settings } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
@@ -17,11 +18,20 @@ export async function AppShell({
 
   // Ordered the way the work is actually done: see the state, do the work, then
   // manage what it runs against.
+  const iconProps = { "aria-hidden": true, size: 16, strokeWidth: 2 } as const;
   const links = [
-    { href: `/${locale}/dashboard`, label: nav("dashboard") },
-    { href: `/${locale}/workspace`, label: nav("workspace") },
-    { href: `/${locale}/sources`, label: nav("sources") },
-    { href: `/${locale}/settings`, label: nav("settings") },
+    {
+      href: `/${locale}/dashboard`,
+      label: nav("dashboard"),
+      icon: <LayoutDashboard {...iconProps} />,
+    },
+    {
+      href: `/${locale}/workspace`,
+      label: nav("workspace"),
+      icon: <MessagesSquare {...iconProps} />,
+    },
+    { href: `/${locale}/sources`, label: nav("sources"), icon: <Database {...iconProps} /> },
+    { href: `/${locale}/settings`, label: nav("settings"), icon: <Settings {...iconProps} /> },
   ];
 
   return (
@@ -37,7 +47,7 @@ export async function AppShell({
           </Link>
           <nav className="flex items-center gap-1 text-sm">
             {links.map((link) => (
-              <NavLink key={link.href} href={link.href}>
+              <NavLink key={link.href} href={link.href} icon={link.icon}>
                 {link.label}
               </NavLink>
             ))}

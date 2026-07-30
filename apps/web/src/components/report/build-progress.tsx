@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  Check,
+  Circle,
+  FileChartColumn,
+  ListTree,
+  Loader,
+  type LucideIcon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -7,6 +15,12 @@ import { reportEventsUrl, type ReportProgressEvent, type ReportStage } from "@/l
 
 /** The stages a build passes through, in order. */
 const STAGES: ReportStage[] = ["plan", "query", "design"];
+
+const STAGE_ICONS: Record<string, LucideIcon> = {
+  plan: ListTree,
+  query: Loader,
+  design: FileChartColumn,
+};
 
 interface Step {
   stage: ReportStage;
@@ -81,19 +95,23 @@ export function BuildProgress({
           const done = index < reached;
           const active = index === reached;
           const latest = [...steps].reverse().find((step) => step.stage === name);
+          const Pending = STAGE_ICONS[name] ?? Circle;
 
           return (
             <li key={name} className="flex items-start gap-3">
-              <span
-                aria-hidden
-                className={
-                  done
-                    ? "mt-0.5 size-4 shrink-0 rounded-full bg-accent"
-                    : active
-                      ? "mt-0.5 size-4 shrink-0 animate-pulse rounded-full bg-accent/60"
-                      : "mt-0.5 size-4 shrink-0 rounded-full border border-border"
-                }
-              />
+              {done ? (
+                <Check aria-hidden size={16} className="mt-0.5 shrink-0 text-accent" />
+              ) : active ? (
+                <Loader
+                  aria-hidden
+                  size={16}
+                  className="mt-0.5 shrink-0 animate-spin text-accent"
+                />
+              ) : (
+                // Its own glyph rather than a blank circle, so a step still to come
+                // says what it will do.
+                <Pending aria-hidden size={16} className="mt-0.5 shrink-0 text-muted/40" />
+              )}
               <div className="flex min-w-0 flex-col">
                 <span
                   className={
