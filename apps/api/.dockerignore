@@ -1,0 +1,18 @@
+# Secrets. The build context is this whole directory and the Dockerfile copies
+# all of it, so without this the live .env is baked into every published image.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Not needed at runtime, and large.
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+tests/
+htmlcov/
+.coverage

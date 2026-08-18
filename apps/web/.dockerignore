@@ -1,0 +1,11 @@
+# Secrets never belong in an image layer.
+.env
+.env.*
+!.env.example
+
+# Installed and built inside the image.
+node_modules/
+.next/
+out/
+coverage/
+tests/
