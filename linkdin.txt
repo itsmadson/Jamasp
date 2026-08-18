@@ -1,0 +1,84 @@
+═══════════════════════════════════════════════════════════════
+ENGLISH — ONE POST, SELF-CONTAINED
+═══════════════════════════════════════════════════════════════
+
+I built Jamasp: an AI tool that reads a database and builds reports from it.
+
+جاماسپ was the counsellor of King Goshtasp — the one who read the signs and advised from knowledge rather than guesswork.
+
+The rule everything rests on: THE MODEL PROPOSES, THE CODE DECIDES. Every AI output passes a deterministic validator before a human sees it.
+
+First, the gate. Jamasp scans the schema, samples rows, and writes a bilingual description of every table and column. A human approves each one. Only approved tables ever reach the SQL writer — so "which tables exist" is a human decision, and the same list is the allowlist the validator enforces.
+
+Then you ask: "user growth over three months, by province, and by role."
+
+1 PLAN — a model splits that into three standalone questions. My first version wrote a single UNION instead, and every chart drew months, provinces and roles on one axis. One request is not one question.
+
+2 QUERY — each panel runs alone: the model writes SQL, a parser checks it, it executes. Anything that is not a single SELECT, touches an unapproved table, or writes, is refused. It parses the SQL. It does not ask the model to promise.
+
+3 MEASURE — the numbers come from code, never the model: totals, the leading category and its exact share, the direction of a trend. A model doing arithmetic over sample rows is sometimes confidently wrong, and a report that misstates a number is worse than one with no words at all.
+
+4 DESIGN — the model receives the columns, some rows and those computed facts, then proposes a layout: chart type, width, and what to say about each block.
+
+5 VALIDATE — the layout is checked against the data. A block naming one panel but using another panel's columns is dropped. A pie with 30 slices becomes a bar. A pie over a time series is refused, because a timeline has no whole to be a share of. Form rules are not opinions, so they live in code rather than a prompt.
+
+Every panel keeps its own saved query, so opening a report re-runs them. A live view, not a screenshot.
+
+What I optimised for:
+
+→ Refusal over plausibility. When it cannot answer honestly it says why. A believable wrong number is the worst thing this could produce.
+
+→ Partial over total failure. One panel breaks, the rest still arrive, and the break is named.
+
+→ Everything inspectable. Every query shown, every number traceable to arithmetic you can check.
+
+Postgres, MySQL and SQL Server. Persian-first RTL interface, not a translation layer added at the end.
+
+github.com/itsmadson/Jamasp
+
+Building was fast. Checking whether it was true was the work — my query timeout had never once been active, and a "successful" registry push had uploaded nothing. Neither ever appeared as an error.
+
+#AI #DataEngineering #PostgreSQL #OpenSource
+
+
+═══════════════════════════════════════════════════════════════
+فارسی — یک پست کامل و مستقل
+═══════════════════════════════════════════════════════════════
+
+جاماسپ را ساختم: ابزاری هوش مصنوعی که پایگاه داده را می‌خواند و از آن گزارش می‌سازد.
+
+جاماسپ وزیر و مشاور گشتاسپ بود — کسی که نشانه‌ها را می‌خواند و بر پایهٔ دانش مشورت می‌داد، نه حدس.
+
+قاعده‌ای که همه‌چیز بر آن استوار است: مدل پیشنهاد می‌دهد، کد تصمیم می‌گیرد. هر خروجی هوش مصنوعی پیش از دیده‌شدن توسط انسان، از یک اعتبارسنج قطعی عبور می‌کند.
+
+نخست، دروازه. جاماسپ ساختار را پویش می‌کند، سطر نمونه برمی‌دارد و برای هر جدول و ستون توضیحی دوزبانه می‌نویسد. انسان هرکدام را تایید می‌کند. فقط جدول‌های تاییدشده به نویسندهٔ SQL می‌رسند — پس «چه جدول‌هایی وجود دارد» تصمیم انسان است، و همان فهرست، مبنای بررسی اعتبارسنج.
+
+بعد می‌پرسید: «رشد کاربران در سه ماه گذشته، به تفکیک استان و نقش.»
+
+۱ برنامه‌ریزی — مدل این را به سه پرسش مستقل تقسیم می‌کند. نسخهٔ اول من به‌جایش یک UNION می‌نوشت و هر نمودار ماه‌ها، استان‌ها و نقش‌ها را روی یک محور رسم می‌کرد. یک درخواست، یک پرسش نیست.
+
+۲ پرس‌وجو — هر بخش جداگانه اجرا می‌شود: مدل SQL می‌نویسد، تحلیلگر بررسی می‌کند، اجرا می‌شود. هر چیزی جز یک SELECT، هر جدول تاییدنشده، و هر عمل نوشتن رد می‌شود. خودِ SQL تحلیل می‌شود؛ از مدل قول گرفته نمی‌شود.
+
+۳ اندازه‌گیری — اعداد از کد می‌آیند، هرگز از مدل: مجموع‌ها، دستهٔ پیشرو و سهم دقیقش، جهت روند. مدلی که روی چند سطر نمونه حساب کند گاهی با اطمینان اشتباه می‌کند، و گزارشی که عدد را اشتباه بگوید بدتر از گزارشی است که اصلاً متن ندارد.
+
+۴ طراحی — مدل ستون‌ها، چند سطر و همان اعداد محاسبه‌شده را می‌گیرد و چیدمان پیشنهاد می‌دهد: نوع نمودار، پهنا، و اینکه دربارهٔ هر بخش چه بگوید.
+
+۵ اعتبارسنجی — چیدمان در برابر داده بررسی می‌شود. بلوکی که نام یک بخش را می‌برد اما از ستون‌های بخش دیگری استفاده می‌کند حذف می‌شود. نمودار دایره‌ای با ۳۰ برش میله‌ای می‌شود. نمودار دایره‌ای روی سری زمانی رد می‌شود، چون خط زمان کلی ندارد که چیزی سهمی از آن باشد. قواعد فرم سلیقه نیستند؛ پس در کد زندگی می‌کنند، نه در پرامپت.
+
+هر بخش پرس‌وجوی ذخیره‌شدهٔ خودش را دارد، پس باز کردن گزارش دوباره اجرایشان می‌کند. نمای زنده، نه عکس.
+
+چه چیزی را بهینه کردم:
+
+← رد کردن، به‌جای پاسخ باورپذیر. وقتی نتواند صادقانه پاسخ دهد، دلیلش را می‌گوید. عددِ غلطِ باورپذیر بدترین خروجی ممکن است.
+
+← شکست جزئی، به‌جای شکست کامل. یک بخش خراب می‌شود، بقیه می‌رسند، و خرابی نام برده می‌شود.
+
+← همه‌چیز قابل بازرسی. هر پرس‌وجو نمایش داده می‌شود، هر عدد به محاسبه‌ای برمی‌گردد که می‌توانید وارسی کنید.
+
+PostgreSQL، MySQL و SQL Server. رابط راست‌به‌چپ با فارسیِ زبان اصلی، نه لایه‌ای که آخر کار اضافه شده باشد.
+
+github.com/itsmadson/Jamasp
+
+ساختن سریع بود. راستی‌آزمایی کارِ اصلی بود — مهلت زمانی پرس‌وجوهایم هرگز فعال نبود، و یک push «موفق» به رجیستری هیچ‌چیز آپلود نکرده بود. هیچ‌کدام هرگز به شکل خطا ظاهر نشدند.
+
+#AI #DataEngineering #PostgreSQL #OpenSource

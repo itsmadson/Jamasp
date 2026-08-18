@@ -1,0 +1,85 @@
+# Jamasp on the demo server.
+#
+#   cd /root/jamasp && docker compose -f compose.demo.yml up -d
+#
+# Differences from the development compose:
+#   - images are pulled from GHCR, never built here
+#   - no fixture database (that is a development convenience)
+#   - Postgres and Redis are NOT published to the host; only the web port is,
+#     and nginx is the only thing that talks to it
+#
+# The service MUST stay named "api": the web image has http://api:8000 baked
+# into its route manifest at build time and cannot be told otherwise at runtime.
+
+name: jamasp
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: jamasp
+      POSTGRES_PASSWORD: ${JAMASP_PG_PASSWORD:?set JAMASP_PG_PASSWORD in .env}
+      POSTGRES_DB: jamasp
+    volumes: ["jamasp-pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jamasp"]
+      interval: 5s
+      retries: 12
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 12
+    restart: always
+
+  api:
+    image: ghcr.io/itsmadson/jamasp-api:latest
+    env_file: .env
+    environment:
+      JAMASP_DATABASE_URL: postgresql+asyncpg://jamasp:${JAMASP_PG_PASSWORD}@postgres:5432/jamasp
+      JAMASP_REDIS_URL: redis://redis:6379/0
+      JAMASP_ENVIRONMENT: production
+      JAMASP_CORS_ORIGINS: ${JAMASP_PUBLIC_URL}
+      JAMASP_ADMIN_EMAIL: ${JAMASP_ADMIN_EMAIL}
+      JAMASP_ADMIN_PASSWORD: ${JAMASP_ADMIN_PASSWORD:?set JAMASP_ADMIN_PASSWORD in .env}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: >
+      sh -c "alembic upgrade head
+      && python -m jamasp.cli seed-admin
+      && uvicorn jamasp.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/api/health')\""]
+      interval: 5s
+      retries: 20
+    restart: always
+
+  worker:
+    image: ghcr.io/itsmadson/jamasp-worker:latest
+    env_file: .env
+    environment:
+      JAMASP_DATABASE_URL: postgresql+asyncpg://jamasp:${JAMASP_PG_PASSWORD}@postgres:5432/jamasp
+      JAMASP_REDIS_URL: redis://redis:6379/0
+      JAMASP_ENVIRONMENT: production
+    depends_on:
+      api: { condition: service_healthy }
+    command: arq jamasp.pipeline.worker.WorkerSettings
+    restart: always
+
+  web:
+    image: ghcr.io/itsmadson/jamasp-web:latest
+    depends_on:
+      api: { condition: service_healthy }
+    # Published on the host, because the nginx container proxies to the host's
+    # public IP the same way it does for every other app here. Close this port at
+    # the firewall so only nginx reaches it. See the shared-network alternative in
+    # docs/deploy-demo.md if you would rather not publish it at all.
+    ports: ["${JAMASP_WEB_PORT:-9210}:3000"]
+    restart: always
+
+volumes:
+  jamasp-pgdata:

@@ -13,7 +13,7 @@ services:
       POSTGRES_USER: jamasp
       POSTGRES_PASSWORD: jamasp
       POSTGRES_DB: jamasp
-    ports: ["5432:5432"]
+    ports: ["${JAMASP_PG_PORT:-5432}:5432"]
     volumes: ["jamasp-pgdata:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U jamasp"]
@@ -22,7 +22,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["${JAMASP_REDIS_PORT:-6379}:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -35,7 +35,7 @@ services:
       POSTGRES_USER: fixture
       POSTGRES_PASSWORD: fixture
       POSTGRES_DB: hr
-    ports: ["5433:5432"]
+    ports: ["${JAMASP_FIXTURE_PG_PORT:-5433}:5432"]
     volumes:
       - ../apps/api/tests/fixtures/hr_schema.sql:/docker-entrypoint-initdb.d/01.sql:ro
 
