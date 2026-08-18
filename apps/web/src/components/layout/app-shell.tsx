@@ -1,5 +1,6 @@
 import { Database, LayoutDashboard, MessagesSquare, Settings } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import Image from "next/image";
 import Link from "next/link";
 
 import { LocaleSwitcher } from "./locale-switcher";
@@ -40,8 +41,11 @@ export async function AppShell({
         <div className="flex items-center gap-7">
           <Link
             href={`/${locale}/dashboard`}
-            className="text-lg font-bold tracking-tight"
+            className="flex items-center gap-2 text-lg font-bold tracking-tight"
           >
+            {/* preload, not priority: priority is deprecated in Next 16, and the
+                wordmark is the first thing on every page. */}
+            <Image src="/logo.png" alt="" width={30} height={30} preload />
             {app("name")}
           </Link>
           <nav className="flex items-center gap-1 text-sm">

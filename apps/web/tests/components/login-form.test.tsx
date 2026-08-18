@@ -38,6 +38,14 @@ describe("LoginForm", () => {
     await vi.waitFor(() =>
       expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ role: "admin" })),
     );
+
+    // Wait for the button to settle back too. onSuccess fires before the
+    // component's finally clause clears the pending flag, so ending the test here
+    // leaves a state update to land after teardown — which throws "window is not
+    // defined" and is reported as an unhandled error.
+    await vi.waitFor(() =>
+      expect(screen.getByRole("button", { name: /sign in/i })).toBeEnabled(),
+    );
   });
 
   it("shows the server's message when credentials are rejected", async () => {
