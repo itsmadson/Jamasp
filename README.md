@@ -1,6 +1,6 @@
 # جاماسپ (اوستایی: Jāmāspa)
 
-<img width="889" height="891" alt="jamasp" src="https://github.com/user-attachments/assets/28e21727-b988-4cc8-8296-71d29c88e8f8" />
+<img width="100" height="100" alt="jamasp" src="https://github.com/user-attachments/assets/28e21727-b988-4cc8-8296-71d29c88e8f8" />
 
 An AI report builder. Connect a database, verify what the AI understood about it,
 then ask for reports in Persian or English.
